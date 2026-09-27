@@ -84,7 +84,9 @@ class Agent:
             usage = usage + response.usage
             messages.append(response.message)
 
-            if response.message.tool_calls and response.stop_reason != "max_tokens":
+            # Run tools only from a reply that finished cleanly: a cut-off, failed or refused
+            # reply may hold a half-written call.
+            if response.message.tool_calls and response.stop_reason not in ("max_tokens", "error", "refused"):
                 results = tuple(self._run_tool(call) for call in response.message.tool_calls)
                 messages.append(Message(role="user", tool_results=results))
                 steps.append(Step(len(steps), response, results))

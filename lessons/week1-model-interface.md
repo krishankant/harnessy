@@ -66,7 +66,7 @@ Read these files before writing anything. They're short.
 
 This is the most important idea this week.
 
-Current Claude models (the default here is `claude-opus-5`) **think before answering**. The response contains `thinking` blocks next to the text and tool calls. By default the thinking text is empty, but the block carries a `signature`. When you send the conversation back for the next turn, **those blocks must go back exactly as they came**. The API checks this. The response can also contain `fallback` blocks, when a declined request was re-run on another model (the adapter turns on server-side fallbacks for Opus 5), and those must go back unchanged too.
+Current Claude models (the default here is `claude-opus-5`) **think before answering**. The response contains `thinking` blocks next to the text and tool calls. By default the thinking text is empty, but the block carries a `signature`. When you send the conversation back for the next turn, **those blocks must go back exactly as they came**. The API checks this. The response can also contain `fallback` blocks, which mark where a declined request was re-run on another model (the adapter turns on server-side fallbacks for Opus 5). The API treats those as markers it ignores, so they could be dropped, but keeping them in `raw` means the turn goes back exactly as it came, with no special cases.
 
 harnessy's neutral `Message` has no field for "Anthropic thinking block", and it shouldn't. So:
 

@@ -4,7 +4,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week2` passes (16 tests), and
+1. `uv run pytest tests/week2` passes (18 tests), and
 2. `uv run python -m scripts.week2_demo` answers "What is 17 + 25, and what time is it?" in 2–3 steps on both providers.
 
 ## 1. Read first
@@ -77,7 +77,9 @@ Every loop needs a limit, or one confused model can run forever and spend real m
 
 ## 5. Truncated tool calls
 
-If the model runs out of output tokens halfway through writing a tool call, the reply may still contain that tool call, with arguments cut off mid-way, and `stop_reason` is `max_tokens`. Running it would call a tool with half an instruction. So the rule is: **if `stop_reason` is `max_tokens`, don't run the tools; stop with `model_error`.** There's a test for exactly this.
+If the model runs out of output tokens halfway through writing a tool call, the reply may still contain that tool call, with arguments cut off mid-way, and `stop_reason` is `max_tokens`. Running it would call a tool with half an instruction. The same goes for a reply that stopped with `error` (for example, the context window filled up mid-reply) or was `refused`. So the rule is: **run tools only from a reply that finished cleanly. If `stop_reason` is `max_tokens`, `error` or `refused`, don't run the tools; stop with `model_error` (or `refused`).** There are tests for exactly this.
+
+Don't narrow the rule to "only when `stop_reason` is `tool_use`". Some OpenAI-compatible servers return `stop` together with tool calls, and those calls are complete.
 
 ## 6. Testing without tokens or waiting
 
@@ -106,7 +108,7 @@ These tests go through `run`, so they'll pass only once `run` works too. Write `
 uv run pytest tests/week2/test_loop.py -k "plain_answer"          # the simplest loop
 uv run pytest tests/week2/test_loop.py -k "tool_calls_run or usage" # tools and token counts
 uv run pytest tests/week2/test_loop.py -k "max_steps or token_budget or timeout"
-uv run pytest tests/week2/test_loop.py -k "model_exception or refusal or truncated or verbose"
+uv run pytest tests/week2/test_loop.py -k "model_exception or refusal or truncated or verbose or error_stop or errored"
 uv run pytest tests/week2                                           # everything
 ```
 

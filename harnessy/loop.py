@@ -71,8 +71,9 @@ class Agent:
         3. Call self.model.complete(messages, [t.spec for t in self.tools], self.system).
            If it raises, stop with "model_error" and error=f"{type(e).__name__}: {e}".
         4. Add response.usage to usage and append response.message to messages.
-        5. If the message has tool calls AND response.stop_reason != "max_tokens"
-           (a truncated call must not run): run each call with self._run_tool, in order;
+        5. If the message has tool calls AND response.stop_reason is not "max_tokens",
+           "error" or "refused" (a cut-off, failed or refused reply may hold a half-written
+           call, which must not run): run each call with self._run_tool, in order;
            append ONE Message(role="user", tool_results=<all results>); record
            Step(len(steps), response, results); call self._log(step); go back to 2.
         6. Otherwise record Step(len(steps), response), call self._log(step), and stop:

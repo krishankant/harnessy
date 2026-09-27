@@ -131,3 +131,17 @@ def test_verbose_prints_each_step():
     model = ScriptedModel([tool_reply(ToolCall("c1", "get_time", {})), text_reply("done")])
     Agent(model, tools=[TIME], verbose=True, printer=lines.append).run("x")
     assert any("step 0" in line for line in lines) and any("step 1" in line for line in lines)
+
+
+def test_error_stop_reason_is_model_error():
+    r = Agent(ScriptedModel([text_reply("", stop_reason="error")])).run("x")
+    assert r.stop_reason == "model_error" and r.error
+
+
+def test_tool_calls_are_not_run_when_the_reply_errored_or_refused():
+    for stop, expected in [("error", "model_error"), ("refused", "refused")]:
+        calls = []
+        tool = Tool(spec("get_time"), lambda: calls.append(1) or "12:00")
+        model = ScriptedModel([tool_reply(ToolCall("c1", "get_time", {}), stop_reason=stop)])
+        r = Agent(model, tools=[tool]).run("x")
+        assert (r.stop_reason, calls) == (expected, []), stop

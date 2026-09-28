@@ -31,7 +31,7 @@ def test_row_cap_and_no_rows(db):
 
 def test_writes_are_refused(db):
     query_readonly(db, "SELECT 1")  # fails plainly while a stub
-    with pytest.raises(sqlite3.OperationalError, match="readonly"):
+    with pytest.raises(sqlite3.DatabaseError, match="not authorized|readonly"):
         query_readonly(db, "DELETE FROM customers")
     assert query_readonly(db, "SELECT count(*) AS n FROM customers") == "n\n3\n(1 rows)"
 
@@ -53,3 +53,12 @@ def test_data_tools_are_given(db, tmp_path):
     assert svg.startswith("<svg") and "Lisbon" in svg and "Leeds" in svg
     bad = reg.call(ToolCall("c3", "plot_query", {"sql": "SELECT name FROM customers", "out": "x.svg"}))
     assert bad.is_error and "two columns" in bad.content
+
+
+def test_attach_and_vacuum_into_cannot_write_files(db, tmp_path):
+    query_readonly(db, "SELECT 1")  # fails plainly while a stub
+    for sql in (f"ATTACH DATABASE '{tmp_path}/evil.db' AS e", f"VACUUM INTO '{tmp_path}/copy.db'", "CREATE TEMP TABLE z (a)"):
+        with pytest.raises(sqlite3.DatabaseError):
+            query_readonly(db, sql)
+    assert not (tmp_path / "evil.db").exists() and not (tmp_path / "copy.db").exists()
+    assert "1" in query_readonly(db, "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2) SELECT * FROM n")

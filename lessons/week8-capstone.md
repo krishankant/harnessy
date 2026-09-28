@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week8` passes (28 tests), and
+1. `uv run pytest tests/week8` passes (29 tests), and
 2. `uv run python -m scripts.evals --suite capstone --provider both --trials 3` shows each agent passing at least 3 of its 5 tasks on each provider, and
 3. the write-up in `NOTES.md` (section 10) is finished.
 
@@ -73,7 +73,11 @@ In a real deployment, the same config with a real search tool would need a real 
 ## 6. The data agent
 
 - `make_agent` builds `data.db` from the task's `data.sql`.
-- **Read-only is enforced by SQLite, not by you.** `connect_readonly` (given) opens the file with `mode=ro`. Checking the SQL text for `DELETE` is a losing game: there are too many ways to write a write. A read-only file refuses them all: `attempt to write a readonly database`. `query_readonly` (your exercise) runs one statement and formats the rows. Two statements in one call fail on their own, because `execute` runs only one.
+- **Read-only is enforced by SQLite, not by you.** Checking the SQL text for `DELETE` is a losing game: there are too many ways to write a write. `connect_readonly` (given) uses two layers:
+  - It opens the file with `mode=ro`.
+  - It adds an *authorizer* that allows only reading actions.
+
+  The second layer matters. `mode=ro` alone still lets `ATTACH DATABASE '/any/path'` create a new file and `VACUUM INTO '/any/path'` copy the whole database anywhere on disk. The final review of this week found exactly that. With the authorizer, those statements, `PRAGMA`s and temp tables all fail with `not authorized`. `query_readonly` (your exercise) runs one statement and formats the rows. Two statements in one call fail on their own, because `execute` runs only one.
 - `plot_query(sql, out)` draws an SVG bar chart from a two-column query. It replaces the learning plan's `plot_csv`: this agent can't write files, so it would have no CSV to plot.
 
 ## 7. Exercises

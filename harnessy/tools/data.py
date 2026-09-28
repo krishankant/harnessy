@@ -1,7 +1,9 @@
 """Data tools (week 8): look at a SQLite database, query it read-only, and chart a query.
 
-Read-only is enforced by SQLite itself (the file is opened with mode=ro), not by checking the
-SQL text: a model can phrase a write in many ways, but a read-only file refuses all of them."""
+Read-only is enforced by SQLite itself, not by checking the SQL text (a model can phrase a write
+in many ways). Two layers: the file is opened with mode=ro, and an authorizer allows only reading
+actions. The second layer matters: mode=ro still lets ATTACH create a new database file and
+VACUUM INTO copy the whole database, anywhere on disk."""
 
 from __future__ import annotations
 
@@ -26,9 +28,19 @@ def build_db(sql_path: str | Path, db_path: str | Path) -> None:
         conn.close()
 
 
+_READ_ACTIONS = {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION, sqlite3.SQLITE_RECURSIVE}
+
+
+def _only_reads(action: int, *args: object) -> int:
+    return sqlite3.SQLITE_OK if action in _READ_ACTIONS else sqlite3.SQLITE_DENY
+
+
 def connect_readonly(db_path: str | Path) -> sqlite3.Connection:
-    """A connection that can't write: SQLite opens the file with mode=ro."""
-    return sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+    """A connection that can't write: the file is opened with mode=ro, and an authorizer denies
+    every action except reading (so no ATTACH, VACUUM INTO, PRAGMA or temp tables either)."""
+    conn = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+    conn.set_authorizer(_only_reads)
+    return conn
 
 
 def svg_bar_chart(rows: list[tuple[Any, ...]], width: int = 600, bar_height: int = 24) -> str:
@@ -58,8 +70,8 @@ def query_readonly(db_path: str | Path, sql: str, max_rows: int = 50) -> str:
         (2 rows)             <- or "(showing the first 50 rows; add a LIMIT or an aggregate)"
 
     Fetch max_rows + 1 rows to know whether there were more. Let sqlite3 errors propagate (the
-    registry turns them into error results): a write fails with "attempt to write a readonly
-    database", and two statements fail because execute() runs only one. Always close the
+    registry turns them into error results): a write fails with "not authorized", and two
+    statements fail because execute() runs only one. Always close the
     connection. A statement with no result columns returns "(the statement returned no rows)".
     """
     raise NotImplementedError("Week 8 exercise: query_readonly")

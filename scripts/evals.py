@@ -3,6 +3,7 @@
 Run from the repo root:
     uv run python -m scripts.evals --tasks easy --trials 1          # cheap first run
     uv run python -m scripts.evals --provider both --trials 3       # the week 5 "done when"
+    uv run python -m scripts.evals --suite capstone --trials 1      # week 8: the three agents
 Results go to evals/results/ (git-ignored); each run is compared with the previous one.
 """
 
@@ -23,13 +24,18 @@ from harnessy.models.anthropic import AnthropicModel  # noqa: E402
 from harnessy.models.openai import OpenAIModel  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-TASKS = ROOT / "evals" / "tasks"
+SUITES = {"core": ROOT / "evals" / "tasks", "capstone": ROOT / "evals" / "capstone"}
 RESULTS = ROOT / "evals" / "results"
 PROVIDERS = {"anthropic": AnthropicModel, "openai": OpenAIModel}
 
 
-def previous(provider: str, before: str) -> dict | None:
-    files = sorted(p for p in RESULTS.glob(f"*-{provider}.json") if p.name < before)
+def result_name(stamp: str, suite: str, provider: str) -> str:
+    return f"{stamp}-{provider}.json" if suite == "core" else f"{stamp}-{suite}-{provider}.json"
+
+
+def previous(suite: str, provider: str, before: str) -> dict | None:
+    pattern = f"*Z-{provider}.json" if suite == "core" else f"*-{suite}-{provider}.json"
+    files = sorted(p for p in RESULTS.glob(pattern) if p.name < before)
     return json.loads(files[-1].read_text()) if files else None
 
 
@@ -39,9 +45,10 @@ def main() -> int:
     parser.add_argument("--trials", type=int, default=1)
     parser.add_argument("--tasks", help="a difficulty (easy/medium/hard) or an id prefix")
     parser.add_argument("--judge", choices=["anthropic", "openai", "none"], default="anthropic")
+    parser.add_argument("--suite", choices=list(SUITES), default="core", help="core (weeks 5-7) or capstone (week 8)")
     args = parser.parse_args()
     try:
-        tasks = load_tasks(TASKS, args.tasks)
+        tasks = load_tasks(SUITES[args.suite], args.tasks)
         if not tasks:
             print(f"no tasks match {args.tasks!r}")
             return 1
@@ -57,30 +64,31 @@ def main() -> int:
         except Exception as e:
             print(f"\n{name} failed to start: {type(e).__name__}: {e}")
             continue
-        print(f"\n== {model.name}: {len(tasks)} tasks x {args.trials} trials")
+        print(f"\n== {model.name}: {args.suite} suite, {len(tasks)} tasks x {args.trials} trials")
 
         def show(r) -> None:
             status = "PASS" if r.passed else "FAIL"
             print(f"  {status} {r.task_id} #{r.trial} steps={r.steps} stop={r.stop_reason}" + (f" error={r.error}" if r.error else ""))
 
         try:
-            records = run_evals(tasks, lambda: model, args.trials, judge, RESULTS / "traces" / f"{stamp}-{name}", show)
+            traces = RESULTS / "traces" / result_name(stamp, args.suite, name).removesuffix(".json")
+            records = run_evals(tasks, lambda: model, args.trials, judge, traces, show)
         except NotImplementedError as e:
             print(f"Finish the exercises first ({e})")
             return 1
         summary = aggregate(records)
         print(format_table(summary))
         RESULTS.mkdir(parents=True, exist_ok=True)
-        out = RESULTS / f"{stamp}-{name}.json"
-        out.write_text(json.dumps({"provider": name, "model": model.name, "timestamp": stamp, "summary": summary,
+        out = RESULTS / result_name(stamp, args.suite, name)
+        out.write_text(json.dumps({"provider": name, "suite": args.suite, "model": model.name, "timestamp": stamp, "summary": summary,
                                    "records": [asdict(r) for r in records]}, indent=2))
-        before = previous(name, out.name)
+        before = previous(args.suite, name, out.name)
         if before:
             changes = compare(before["summary"], summary)
             print(f"\nchanges since {before['timestamp']}:" if changes else f"\nno change since {before['timestamp']}")
             for line in changes:
                 print("  " + line)
-        print(f"saved {out.relative_to(ROOT)}; traces in {(RESULTS / 'traces' / f'{stamp}-{name}').relative_to(ROOT)}/")
+        print(f"saved {out.relative_to(ROOT)}; traces in {traces.relative_to(ROOT)}/")
     return 0
 
 

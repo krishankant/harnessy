@@ -11,14 +11,12 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
-from harnessy.agents import AGENTS
 from harnessy.evals.graders import grade
 from harnessy.evals.tasks import EvalTask
 from harnessy.loop import Agent
 from harnessy.memory import MemoryStore, memory_tools
 from harnessy.models.base import Model
 from harnessy.tools.files import file_tools, resolve_inside
-from harnessy.tools.localweb import LocalWeb
 from harnessy.tracer import Tracer
 from harnessy.types import Tool
 
@@ -88,6 +86,10 @@ def run_trial(
                 target.write_text(text)
             tracer = Tracer(trace) if trace else None
             if task.agent:
+                # Imported here, not at the top: the week 5 runner shouldn't need week 8's modules.
+                from harnessy.agents import AGENTS
+                from harnessy.tools.localweb import LocalWeb
+
                 context = {}
                 if task.agent == "research":
                     web = stack.enter_context(LocalWeb(corpus or find_corpus()))

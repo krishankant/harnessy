@@ -2,7 +2,7 @@
 
 A small agent harness you build yourself, one week at a time. It works with any model provider: Anthropic, OpenAI, or a local model through Ollama. It follows the 8-week *Harness Engineering* learning plan. Each week you read a short lesson, fill in the missing pieces of the code, and make the tests pass.
 
-This repo currently covers **week 1** (a provider-neutral model interface), **week 2** (the agent loop), **week 3** (tools), **week 4** (context and memory), **week 5** (traces and evals) and **week 6** (hooks, approvals, subagents and planning).
+The repo covers all eight weeks: **1** a provider-neutral model interface, **2** the agent loop, **3** tools, **4** context and memory, **5** traces and evals, **6** hooks, approvals, subagents and planning, **7** production concerns (retries, streaming, cost limits, a sandbox, the lethal-trifecta check) and **8** the capstone (three agents on one harness).
 
 ## Setup
 
@@ -30,7 +30,7 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/models/anthropic.py` | 1 | **Exercise:** 4 translation functions (`AnthropicModel.complete` is given) |
 | `harnessy/models/openai.py` | 1 | **Exercise:** 4 translation functions (`OpenAIModel.complete` is given) |
 | `harnessy/models/scripted.py` | 2 | Given: a fake model for tests |
-| `harnessy/loop.py` | 2–6 | **Exercise:** `Agent.run` and `Agent._run_tool`; weeks 3–6 add *wire it in* edits |
+| `harnessy/loop.py` | 2–7 | **Exercise:** `Agent.run` and `Agent._run_tool`; weeks 3–7 add *wire it in* edits |
 | `scripts/week1_compare.py` | 1 | Given: the same question on both providers |
 | `scripts/week2_demo.py` | 2 | Given: the loop answering a two-tool question |
 | `harnessy/tools/schema.py` | 3 | **Exercise:** `json_type`, `schema_from_function` (`@tool` and `parse_docstring` are given) |
@@ -53,6 +53,21 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/subagents.py` | 6 | **Exercise:** `subagent_tool` |
 | `harnessy/todo.py` | 6 | **Exercise:** `TodoList.apply`, `render`, `before_model` |
 | `scripts/week6_demo.py` | 6 | Given: an approval prompt, then a two-subagent task |
+| `harnessy/models/retry.py` | 7 | **Exercise:** `is_retryable`, `backoff_delay`, `RetryingModel.complete` |
+| `harnessy/models/openai_stream.py` | 7 | **Exercise:** `merge_openai_chunks` (each model's `stream()` is given) |
+| `harnessy/streaming.py` | 7 | **Exercise:** `collect_stream`, `stream_agent` |
+| `harnessy/cost.py` | 7 | **Exercise:** `price_for`, `cost_usd` (the `PRICES` table is given, checked 2026-09-28) |
+| `harnessy/tools/sandbox.py` | 7 | **Exercise:** `run_command` (`run_shell` is given) |
+| `harnessy/safety.py` | 7 | **Exercise:** `check_trifecta` |
+| `harnessy/tools/outbox.py` | 7 | Given: a fake `send_email` that writes to a file |
+| `scripts/week7_demo.py` | 7 | Given: streaming, a retried 429, a cost limit, a blocked prompt injection |
+| `harnessy/tools/localweb.py` | 8 | **Exercise:** `LocalWeb.search` (serving and `web_search` are given) |
+| `harnessy/tools/code.py` | 8 | **Exercise:** `edit_text` (`code_tools` is given) |
+| `harnessy/tools/data.py` | 8 | **Exercise:** `query_readonly` (`data_tools`, charts are given) |
+| `harnessy/evals/graders.py` | 8 | **Exercise:** `check_citations` (added to the week 5 file) |
+| `harnessy/agents/` | 8 | **Exercise:** `make_agent` for research, code and data |
+| `evals/corpus/` | 8 | Given: 16 pages about a fictional region, served as a local web |
+| `evals/capstone/` | 8 | Given: 15 capstone tasks, 5 per agent (`scripts.evals --suite capstone`) |
 
 ## Checking against the reference solutions
 
@@ -72,7 +87,8 @@ harnessy/            your copy: the exercises live here
 solutions/harnessy/  reference copy, complete
 lessons/             one lesson per week
 tests/week1…week6/  offline tests (fixtures in tests/fixtures/)
-evals/tasks/         eval tasks (YAML); evals/results/ holds saved runs and traces (git-ignored)
+evals/tasks/         eval tasks (YAML); evals/capstone/ the week 8 tasks; evals/corpus/ the local web
+                     evals/results/ holds saved runs and traces (git-ignored)
 scripts/             live demos (need .env)
 docs/superpowers/    the design spec and implementation plan for this repo
 ```

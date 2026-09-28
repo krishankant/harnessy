@@ -56,7 +56,7 @@ def judge_verdict(judge: Model, criteria: str, answer: str) -> CheckResult:
 def check_citations(answer: str, facts: list[str], web: LocalWeb) -> CheckResult:
     """Week 8: pass only if the answer's citations are real and support every fact.
 
-    - URLs: re.findall(r"https?://\S+", answer), each with trailing .,;:!?)]"'> stripped
+    - URLs: re.findall(r"https?://\\S+", answer), each with trailing .,;:!?)]"'> stripped
       (Markdown links and <...> wrappers). None -> CheckResult(False, "the answer cites no URLs").
     - Every URL must be a page of web (web.slug_for(url) in web.pages), else
       CheckResult(False, "<url> is not a page on the local web").

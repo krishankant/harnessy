@@ -60,12 +60,14 @@ class ToolSpec:
 @dataclass(frozen=True)
 class Tool:
     """A tool the agent can run: what the model sees (spec) and the function behind it.
-    timeout_s and max_chars override the registry's defaults for this one tool (week 3)."""
+    timeout_s and max_chars override the registry's defaults for this one tool (week 3);
+    tags mark which lethal-trifecta legs it has (week 7)."""
 
     spec: ToolSpec
     fn: Callable[..., object]
     timeout_s: float | None = None
     max_chars: int | None = None
+    tags: frozenset[str] = frozenset()
 
     @property
     def name(self) -> str:

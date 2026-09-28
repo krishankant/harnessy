@@ -42,11 +42,13 @@ def subagent_tool(
       get around its own policy by handing the risky call to a helper.
     - end_turn -> return its final text, or "(the subagent returned no text)" if empty.
     - any other stop -> "The subagent stopped early (<stop_reason>[: <error>]). Partial answer: <final text>".
+    - The tool's tags are the union of `tools`' tags (week 7): delegating must not hide a
+      trifecta leg. Pass tags=frozenset().union(*(t.tags for t in tools)) to @tool.
     """
     available = {t.name: t for t in tools}
     child_hooks = list(hooks)
 
-    @tool(timeout_s=600)
+    @tool(timeout_s=600, tags=frozenset().union(*(t.tags for t in tools)))
     def spawn_subagent(task: str, tools: list[str] | None = None) -> str:
         """Hand a self-contained sub-task to a helper agent with a fresh context. It returns only its final answer.
 

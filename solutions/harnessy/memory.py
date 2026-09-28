@@ -67,7 +67,7 @@ def memory_tools(store: MemoryStore) -> list[Tool]:
         """
         return store.remember(key, text)
 
-    @tool
+    @tool(tags={"private_data"})
     def recall(query: str) -> str:
         """Search long-term memory for facts saved in earlier runs.
 

@@ -27,7 +27,7 @@ def resolve_inside(root: str | Path, path: str) -> Path:
 def file_tools(root: str | Path) -> list[Tool]:
     """read_file and write_file tools that only touch files inside root."""
 
-    @tool
+    @tool(tags={"private_data"})
     def read_file(path: str, offset: int = 1, limit: int = 200) -> str:
         """Read a text file from the workspace, with line numbers.
 

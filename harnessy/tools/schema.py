@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import types
-from typing import Any, Callable, Literal, Union, get_args, get_origin, get_type_hints
+from typing import Any, Callable, Iterable, Literal, Union, get_args, get_origin, get_type_hints
 
 from harnessy.types import Tool, ToolSpec
 
@@ -57,6 +57,7 @@ def tool(
     description: str | None = None,
     timeout_s: float | None = None,
     max_chars: int | None = None,
+    tags: Iterable[str] = (),
 ):
     """Turn a function into a Tool. Use it bare (@tool) or with options (@tool(timeout_s=5)).
     The name defaults to the function's name and the description to its docstring."""
@@ -65,7 +66,7 @@ def tool(
         doc_description, _ = parse_docstring(f.__doc__)
         tool_name = name or f.__name__
         spec = ToolSpec(tool_name, description or doc_description or tool_name, schema_from_function(f))
-        return Tool(spec, f, timeout_s, max_chars)
+        return Tool(spec, f, timeout_s, max_chars, frozenset(tags))
 
     return build(fn) if fn is not None else build
 

@@ -42,5 +42,7 @@ def subagent_tool(
       get around its own policy by handing the risky call to a helper.
     - end_turn -> return its final text, or "(the subagent returned no text)" if empty.
     - any other stop -> "The subagent stopped early (<stop_reason>[: <error>]). Partial answer: <final text>".
+    - The tool's tags are the union of `tools`' tags (week 7): delegating must not hide a
+      trifecta leg. Pass tags=frozenset().union(*(t.tags for t in tools)) to @tool.
     """
     raise NotImplementedError("Week 6 exercise: subagent_tool")

@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Literal
 
+from harnessy.context import ContextManager
 from harnessy.models.base import Model
 from harnessy.tools.registry import ToolRegistry
 from harnessy.types import Message, ModelResponse, Tool, ToolCall, ToolResult, ToolSpec, Usage
@@ -42,6 +43,7 @@ class Agent:
     clock: Callable[[], float] = time.monotonic
     verbose: bool = False
     printer: Callable[[str], object] = print
+    context: ContextManager | None = None
     _registry: ToolRegistry = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -68,7 +70,8 @@ class Agent:
                 return finish("timeout")
 
             try:
-                response = self.model.complete(messages, specs, self.system)
+                view = self.context.prepare(messages) if self.context else messages
+                response = self.model.complete(view, specs, self.system)
             except Exception as e:  # any model failure ends the run cleanly
                 return finish("model_error", error=f"{type(e).__name__}: {e}")
 

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Literal
 
 from harnessy.models.base import Model
+from harnessy.tools.registry import ToolRegistry
 from harnessy.types import Message, ModelResponse, Tool, ToolCall, ToolResult, ToolSpec, Usage
 
 RunStopReason = Literal["end_turn", "max_steps", "max_tokens", "timeout", "refused", "model_error"]
@@ -41,10 +42,10 @@ class Agent:
     clock: Callable[[], float] = time.monotonic
     verbose: bool = False
     printer: Callable[[str], object] = print
-    _by_name: dict[str, Tool] = field(init=False, repr=False)
+    _registry: ToolRegistry = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self._by_name = {t.name: t for t in self.tools}
+        self._registry = ToolRegistry(self.tools)
 
     # --- Week 2 exercise ---------------------------------------------------------------
 
@@ -52,7 +53,7 @@ class Agent:
         messages: list[Message] = [Message(role="user", text=task)]
         steps: list[Step] = []
         usage = Usage()
-        specs = [t.spec for t in self.tools]
+        specs = self._registry.specs()
         start = self.clock()
 
         def finish(reason: RunStopReason, text: str = "", error: str | None = None) -> RunResult:
@@ -93,17 +94,7 @@ class Agent:
             return finish("end_turn", text)
 
     def _run_tool(self, call: ToolCall) -> ToolResult:
-        tool = self._by_name.get(call.name)
-        if tool is None:
-            available = ", ".join(sorted(self._by_name)) or "none"
-            return ToolResult(call.id, f"Unknown tool '{call.name}'. Available tools: {available}.", is_error=True)
-        try:
-            output = tool.fn(**call.arguments)
-        except TypeError as e:
-            return ToolResult(call.id, f"Bad arguments for '{call.name}': {e}. Check the tool's parameters.", is_error=True)
-        except Exception as e:
-            return ToolResult(call.id, f"Tool '{call.name}' failed: {type(e).__name__}: {e}", is_error=True)
-        return ToolResult(call.id, output if isinstance(output, str) else str(output))
+        return self._registry.call(call)
 
     # --- Given -------------------------------------------------------------------------
 

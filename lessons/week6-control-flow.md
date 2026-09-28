@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week6` passes (33 tests), and weeks 1–5 still pass after the wiring (section 10), and
+1. `uv run pytest tests/week6` passes (34 tests), and weeks 1–5 still pass after the wiring (section 10), and
 2. `uv run python -m scripts.week6_demo` stops to ask before writing a file, and in part 2 the parent's history holds only the two helpers' answers.
 
 ## 1. Read first
@@ -79,7 +79,9 @@ A blocked call is **not** a crash. The model gets an error result, "The user dec
 
 - a fresh context: only the `task` text, no parent history;
 - only the tools the parent names;
-- no hooks and no tracer.
+- only the hooks you pass to `subagent_tool(..., hooks=[...])`, and no tracer.
+
+**Pass your safety hooks down.** A helper with no hooks has no approval policy. If the parent's `write_file` is `deny` but a helper is given `write_file` and no `ApprovalHook`, the parent can get around its own policy just by delegating. Either give helpers only safe tools (the demo gives them `read_file` alone) or pass the same `ApprovalHook` in `hooks=`.
 
 Only the child's final answer comes back. In the demo, the helpers read four files, but the parent's history never contains a file. It holds the task, one call to the helpers, their two summaries and the final answer.
 

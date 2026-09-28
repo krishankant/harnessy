@@ -3,6 +3,9 @@ only the child's final answer, so its own context stays small."""
 
 from __future__ import annotations
 
+from typing import Iterable
+
+from harnessy.hooks import Hook
 from harnessy.loop import Agent
 from harnessy.models.base import Model
 from harnessy.tools.schema import tool
@@ -17,7 +20,9 @@ SUBAGENT_SYSTEM = (
 # --- Week 6 exercise -------------------------------------------------------------------
 
 
-def subagent_tool(model: Model, tools: list[Tool], system: str = SUBAGENT_SYSTEM, max_steps: int = 8) -> Tool:
+def subagent_tool(
+    model: Model, tools: list[Tool], system: str = SUBAGENT_SYSTEM, max_steps: int = 8, hooks: Iterable[Hook] = ()
+) -> Tool:
     """Return a tool named spawn_subagent, built with @tool(timeout_s=600) (a child run takes a
     while), with this signature and docstring:
 
@@ -32,7 +37,9 @@ def subagent_tool(model: Model, tools: list[Tool], system: str = SUBAGENT_SYSTEM
     When called:
     - names = the given tool names, or all of `tools` if None. Any unknown name ->
       raise ValueError("unknown tools: <unknown joined ', '>. Available: <all names joined ', '>").
-    - Run a NEW Agent(model, tools=<those tools>, system=system, max_steps=max_steps) on task.
+    - Run a NEW Agent(model, tools=<those tools>, system=system, max_steps=max_steps, hooks=list(hooks))
+      on task. The child gets only the hooks passed here: without your ApprovalHook, a parent could
+      get around its own policy by handing the risky call to a helper.
     - end_turn -> return its final text, or "(the subagent returned no text)" if empty.
     - any other stop -> "The subagent stopped early (<stop_reason>[: <error>]). Partial answer: <final text>".
     """

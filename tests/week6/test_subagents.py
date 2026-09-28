@@ -42,3 +42,13 @@ def test_an_early_stop_is_reported(files):
 
 def test_an_empty_answer(files):
     assert subagent_tool(ScriptedModel([text_reply("")]), files).fn(task="t") == "(the subagent returned no text)"
+
+
+def test_hooks_passed_to_subagent_tool_apply_to_the_child(tmp_path):
+    from harnessy.approvals import ApprovalHook
+
+    files = file_tools(tmp_path)
+    model = ScriptedModel([tool_reply(ToolCall("k1", "write_file", {"path": "x.txt", "content": "hi"})), text_reply("done")])
+    spawn = subagent_tool(model, files, hooks=[ApprovalHook({"write_file": "deny"})])
+    assert spawn.fn(task="write x.txt", tools=["write_file"]) == "done"
+    assert not (tmp_path / "x.txt").exists()

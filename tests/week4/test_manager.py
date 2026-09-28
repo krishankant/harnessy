@@ -1,6 +1,6 @@
 from harnessy.context import ContextManager, Summarize, estimate_tokens
 from harnessy.models.scripted import ScriptedModel, text_reply
-from harnessy.types import Message
+from harnessy.types import Message, ToolResult
 
 from .helpers import history
 
@@ -49,3 +49,13 @@ def test_summarize_keeps_room_for_its_summary():
     cm = ContextManager(budget_tokens=1000, strategy=Summarize(model, reserve_tokens=100), keep_last_results=100)
     view = cm.prepare(history(10))
     assert estimate_tokens(view) <= 500 and "short summary" in view[0].text
+
+
+def test_summarize_reads_the_original_results_not_the_cleared_stubs():
+    h = history(10, result_size=600)
+    h[2] = Message("user", tool_results=(ToolResult("c0", "a purple elephant " + "r" * 600),))
+    model = ScriptedModel([text_reply("S")])
+    cm = ContextManager(budget_tokens=1000, strategy=Summarize(model))  # default keep_last_results=3
+    view = cm.prepare(h)
+    assert "purple elephant" in model.calls[0].messages[0].text
+    assert "purple elephant" not in "".join(r.content for m in view[1:] for r in m.tool_results)

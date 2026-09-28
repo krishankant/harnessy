@@ -40,7 +40,7 @@ def render_transcript(messages: list[Message]) -> str:
 class Strategy(Protocol):
     reserve_tokens: int
 
-    def view(self, messages: list[Message], cut: int) -> list[Message]: ...
+    def view(self, messages: list[Message], cut: int, original: list[Message] | None = None) -> list[Message]: ...
 
     def reset(self) -> None: ...
 
@@ -50,7 +50,7 @@ class DropOldest:
 
     reserve_tokens = 0
 
-    def view(self, messages: list[Message], cut: int) -> list[Message]:
+    def view(self, messages: list[Message], cut: int, original: list[Message] | None = None) -> list[Message]:
         return [messages[0], *messages[cut:]]
 
     def reset(self) -> None:
@@ -106,18 +106,24 @@ class Summarize:
     def reset(self) -> None:
         self._cut, self._summary = 1, ""
 
-    def view(self, messages: list[Message], cut: int) -> list[Message]:
+    def view(self, messages: list[Message], cut: int, original: list[Message] | None = None) -> list[Message]:
         """The task (with the summary added) followed by messages[cut:].
+
+        `messages` may have old tool results cleared to stubs; `original` is the same history
+        before clearing (default: messages). Summarize from `original`, so the summary keeps
+        the facts the stubs hid; build the kept tail from `messages`.
 
         - cut <= 1: nothing is dropped; return list(messages) with no model call.
         - cut == the cut you summarized last time: reuse the stored summary, no model call.
         - cut > the last cut: summarize only what is newly dropped. Send ONE
           self.model.complete([Message("user", text=...)], [], system=self.prompt) where
           the text is "Summary so far:\n<old summary>\n\n" (only if there is one) +
-          "Transcript:\n" + render_transcript(messages[last_cut:cut]).
+          "Transcript:\n" + render_transcript(original[last_cut:cut]).
         - cut < the last cut (a new history): summarize messages[1:cut] from scratch.
         Store the reply text, stripped and cut to self.reserve_tokens * 4 characters, and the
-        cut. Add the reply's usage to self.usage.
+        cut. Add the reply's usage to self.usage. If the reply's stop_reason is not
+        "end_turn" (refused, cut off, failed), raise RuntimeError naming it and keep nothing:
+        a bad summary would silently replace the dropped turns.
         The first message of the view is the task message with its text replaced by
         task.text + "\n\n[Summary of earlier work]\n" + summary (dataclasses.replace).
         """
@@ -155,11 +161,12 @@ class ContextManager:
 
         1. self._start_if_new(history)   (given)
         2. msgs = clear_old_results(history, self.keep_last_results)
-        3. view = self.strategy.view(msgs, self.cut) if self.cut else msgs
+        3. view = self.strategy.view(msgs, self.cut, history) if self.cut else msgs
+           (history goes along so Summarize can read results that were cleared in msgs)
         4. If estimate_tokens(view) > self.budget_tokens: move the cut forward with
            find_cut(msgs, int(self.budget_tokens * self.target_ratio) - self.strategy.reserve_tokens,
                     min_cut=self.cut or 1),
-           store it in self.cut, and rebuild view with the strategy.
+           store it in self.cut, and rebuild view with self.strategy.view(msgs, self.cut, history).
         The cut only moves when the budget is exceeded, so between compactions the start of
         the view stays the same and the provider's prompt cache keeps hitting.
         """

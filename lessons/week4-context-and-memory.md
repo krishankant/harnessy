@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week4` passes (32 tests) and weeks 1–3 still pass after the wiring (section 9), and
+1. `uv run pytest tests/week4` passes (34 tests) and weeks 1–3 still pass after the wiring (section 9), and
 2. `uv run python -m scripts.week4_demo` finds the purple elephant with and without a `ContextManager`, and the second memory run recalls the colour from the first.
 
 ## 1. Read first
@@ -67,6 +67,8 @@ That's a tool result with no matching call, and Anthropic rejects the request. I
 | What happens to the dropped turns | Gone | A model writes a summary, and it's added to the task message |
 | Cost | Free | One extra model call per compaction |
 | Risk | Forgets a fact found early | The summary can miss or garble details |
+
+`Summarize` reads the **original** history, not the cleared view: `prepare` passes both, so a fact hidden behind a `[cleared: …]` stub still reaches the summary. And if the summary call is refused or cut off, `Summarize` raises instead of storing an empty summary; inside your loop's `try`, that ends the run as `model_error` rather than silently losing the dropped turns.
 
 `Summarize` is incremental. The next compaction sends *the old summary plus only the newly dropped turns*, not the whole history again. It also remembers its last cut, so a view with the same cut costs no model call. Its model usage is kept on `Summarize.usage`, and it's **not** included in `RunResult.usage`. Week 7's cost meter fixes that.
 

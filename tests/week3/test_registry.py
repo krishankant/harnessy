@@ -1,3 +1,7 @@
+import os
+import subprocess
+import sys
+import textwrap
 import time
 
 from harnessy.tools.registry import ToolRegistry, truncate, validate_args
@@ -138,3 +142,21 @@ def test_output_is_truncated_to_the_tool_or_default_limit():
 
 def test_specs_keep_registration_order():
     assert [s.name for s in ToolRegistry([slow, add]).specs()] == ["slow", "add"]
+
+
+def test_a_hung_tool_does_not_keep_the_process_alive(tmp_path):
+    code = textwrap.dedent(
+        """
+        import time
+        from harnessy.tools.registry import ToolRegistry
+        from harnessy.types import Tool, ToolCall, ToolSpec
+        hang = Tool(ToolSpec("hang", "Hang.", {"type": "object", "properties": {}}), lambda: time.sleep(60), timeout_s=0.1)
+        print(ToolRegistry([hang]).call(ToolCall("c1", "hang", {})).content)
+        """
+    )
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)}
+    start = time.monotonic()
+    # cwd=tmp_path: `python -c` puts the cwd first on sys.path, which would shadow the tree under test
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60, env=env, cwd=tmp_path)
+    assert "timed out" in out.stdout, out.stderr
+    assert time.monotonic() - start < 10

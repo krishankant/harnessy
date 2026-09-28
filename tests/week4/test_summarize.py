@@ -1,3 +1,5 @@
+import pytest
+
 from harnessy.context import SUMMARY_PROMPT, Summarize, render_transcript
 from harnessy.models.scripted import ScriptedModel, text_reply
 from harnessy.types import Usage
@@ -57,3 +59,12 @@ def test_reset_forgets_the_summary():
     s.reset()
     s.view(h, 5)
     assert len(model.calls) == 2 and "Summary so far" not in model.calls[1].messages[0].text
+
+
+def test_a_refused_or_failed_summary_raises_and_is_not_kept():
+    h = history(6)
+    Summarize(ScriptedModel([text_reply("S0")])).view(h, 5)  # fails plainly while view is still a stub
+    s = Summarize(ScriptedModel([text_reply("", stop_reason="refused"), text_reply("S1")]))
+    with pytest.raises(RuntimeError, match="refused"):
+        s.view(h, 5)
+    assert s.view(h, 5)[0].text.endswith("S1")

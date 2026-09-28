@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week3` passes (49 tests), and `tests/week2` still passes after you wire the registry in (section 9), and
+1. `uv run pytest tests/week3` passes (50 tests), and `tests/week2` still passes after you wire the registry in (section 9), and
 2. `uv run python -m scripts.week3_demo` writes and reads back a haiku on both providers.
 
 ## 1. Read first
@@ -84,7 +84,7 @@ Tool 'http_get' timed out after 15s. Try a smaller request.
 
 The model reads these on the next step. A good error message is the cheapest way to get a model to fix its own call. The `test_wiring.py` "done when" test checks exactly this: a bad call, a readable error, then a fixed call.
 
-**Timeouts, with one caveat.** The registry runs each tool in a worker thread and waits at most `timeout_s`. When the wait runs out, the loop moves on, but Python can't kill a thread, so a hung tool keeps running in the background. That's fine for reads. It's not fine for a tool that changes things. Week 7 moves risky tools into a subprocess that can be killed.
+**Timeouts, with one caveat.** The registry runs each tool in a worker thread and waits at most `timeout_s`. When the wait runs out, the loop moves on, but Python can't kill a thread, so a hung tool keeps running in the background. Make it a **daemon** thread (`threading.Thread(..., daemon=True)`): a `ThreadPoolExecutor` worker would keep your whole program from exiting until the hung tool finished, possibly forever. `test_a_hung_tool_does_not_keep_the_process_alive` checks this. A thread that keeps running is fine for reads. It's not fine for a tool that changes things. Week 7 moves risky tools into a subprocess that can be killed.
 
 ## 6. Truncation
 

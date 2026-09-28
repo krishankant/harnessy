@@ -3,7 +3,7 @@ and turn every failure into a result the model can read (week 3)."""
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, wait
+import threading
 from typing import Any, Iterable
 
 from harnessy.types import Tool, ToolCall, ToolResult, ToolSpec
@@ -74,11 +74,13 @@ class ToolRegistry:
         1. Unknown name -> error: "Unknown tool 'x'. Available tools: a, b."
         2. validate_args problems -> error:
            "Invalid arguments for 'add': <problems joined by '; '>. Expected parameters: <self.expected(tool)>."
-        3. Run tool.fn(**call.arguments) in a ThreadPoolExecutor worker and wait at most the
-           tool's timeout_s (or self.default_timeout_s if None). Too slow -> error:
-           "Tool 'x' timed out after 0.05s. ..." (format the number with :g). Shut the pool
-           down with wait=False: Python can't kill the thread, so it finishes in the
-           background (week 7 moves risky tools into a subprocess that can be killed).
+        3. Run tool.fn(**call.arguments) in a threading.Thread(daemon=True) and join it for
+           at most the tool's timeout_s (or self.default_timeout_s if None). Still alive ->
+           error "Tool 'x' timed out after 0.05s. ..." (format the number with :g). Python
+           can't kill a thread, so it keeps running in the background; daemon=True means it
+           won't stop your program from exiting (a ThreadPoolExecutor worker would). Week 7
+           moves risky tools into a subprocess that can be killed.
+           Catch the tool's exception inside the thread and hand it back (e.g. in a dict).
         4. TypeError -> error "Bad arguments for 'x': <e>. Expected parameters: ...";
            any other exception -> error "Tool 'x' failed: <ExceptionType>: <e>".
         5. Success -> str() the output if it isn't a str, then truncate it to the tool's

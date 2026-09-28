@@ -79,3 +79,13 @@ def test_the_shipped_tasks_all_load():
     assert Counter(t.difficulty for t in tasks) == {"easy": 5, "medium": 5, "hard": 5}
     assert sum(any(c["type"] == "rubric" for c in t.checks) for t in tasks) == 1
     assert all(any(c["type"] != "rubric" for c in t.checks) for t in tasks)
+
+
+def test_every_seeded_file_is_named_in_the_prompt():
+    """The file tools can't list a folder, so a task must name every file the agent needs."""
+    for task in load_tasks(ROOT / "evals" / "tasks"):
+        if "files" not in task.toolsets:
+            continue
+        for path in task.files:
+            name = Path(path).name
+            assert name.startswith(".") or name in task.prompt, f"{task.id}: prompt doesn't name {name}"

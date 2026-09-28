@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week5` passes (44 tests), and weeks 1–4 still pass after the wiring (section 5), and
+1. `uv run pytest tests/week5` passes (45 tests), and weeks 1–4 still pass after the wiring (section 5), and
 2. `uv run python -m scripts.evals --provider both --trials 3` prints a table for each provider, and changing one tool description visibly moves at least one number.
 
 ## 1. Read first

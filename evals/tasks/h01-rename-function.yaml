@@ -2,7 +2,7 @@ id: h01-rename-function
 difficulty: hard
 toolsets: [files]
 max_steps: 10
-prompt: "Rename the function fetch_data to load_records everywhere in src/ (its definition and every call). Don't change anything else."
+prompt: "Rename the function fetch_data to load_records everywhere in src/util.py and src/app.py (its definition and every call). Don't change anything else."
 files:
   src/util.py: |
     def fetch_data(path):

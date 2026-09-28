@@ -53,6 +53,7 @@ def page():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_port}/"
     server.shutdown()
+    server.server_close()
 
 
 def test_a_run_survives_a_rate_limit():

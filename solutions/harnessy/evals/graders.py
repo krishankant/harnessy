@@ -5,13 +5,19 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
+import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from harnessy.models.base import Model
 from harnessy.tools.files import resolve_inside
+from harnessy.tools.sandbox import run_command
 from harnessy.types import Message
+
+if TYPE_CHECKING:
+    from harnessy.tools.localweb import LocalWeb
 
 JUDGE_PROMPT = (
     "You grade an AI agent's work against a rubric. Reply with PASS or FAIL as the first word, "
@@ -47,7 +53,36 @@ def judge_verdict(judge: Model, criteria: str, answer: str) -> CheckResult:
     return CheckResult(False, f"judge reply unclear: {reply[:100]!r}")
 
 
-def grade(check: dict[str, Any], answer: str, workspace: str | Path, judge: Model | None = None) -> CheckResult:
+def check_citations(answer: str, facts: list[str], web: LocalWeb) -> CheckResult:
+    """Week 8: pass only if the answer's citations are real and support every fact.
+
+    - URLs: re.findall(r"https?://\S+", answer), each with trailing .,;:!?)]"'> stripped
+      (Markdown links and <...> wrappers). None -> CheckResult(False, "the answer cites no URLs").
+    - Every URL must be a page of web (web.slug_for(url) in web.pages), else
+      CheckResult(False, "<url> is not a page on the local web").
+    - Every fact must appear (case-insensitive) in the title or text of at least one cited page,
+      else CheckResult(False, "no cited page supports: <missing facts joined '; '>").
+    - Otherwise CheckResult(True, "<n> citation(s), all supported").
+    """
+    urls = [u.rstrip(".,;:!?)]\"'>") for u in re.findall(r"https?://\S+", answer)]
+    if not urls:
+        return CheckResult(False, "the answer cites no URLs")
+    pages = []
+    for url in urls:
+        slug = web.slug_for(url)
+        if slug not in web.pages:
+            return CheckResult(False, f"{url} is not a page on the local web")
+        title, text = web.pages[slug]
+        pages.append(f"{title}\n{text}".lower())
+    missing = [f for f in facts if not any(f.lower() in page for page in pages)]
+    if missing:
+        return CheckResult(False, "no cited page supports: " + "; ".join(missing))
+    return CheckResult(True, f"{len(urls)} citation(s), all supported")
+
+
+def grade(
+    check: dict[str, Any], answer: str, workspace: str | Path, judge: Model | None = None, web: LocalWeb | None = None
+) -> CheckResult:
     """Grade one check. NEVER raises: every problem is a failed CheckResult with a readable detail.
 
     Paths always go through resolve_inside(workspace, path) (a check must not read outside).
@@ -62,6 +97,12 @@ def grade(check: dict[str, Any], answer: str, workspace: str | Path, judge: Mode
     - rubric {criteria, path?}      -> no judge: CheckResult(False, "rubric check needs a judge model");
                                        otherwise judge_verdict on the file's text if path is given,
                                        else on the answer
+    - citations {facts} (week 8)    -> no web: CheckResult(False, "citations check needs the local web");
+                                       otherwise check_citations(answer, facts, web)
+    - command_succeeds {command} (week 8) -> run it in the workspace with run_command (a leading
+                                       "python" becomes sys.executable; timeout 180 s); passes on
+                                       exit code 0, else says "exit code N" (or "timed out") and
+                                       the last 300 characters of output
     A missing key -> CheckResult(False, "<type> check is missing '<key>'"); any other exception
     -> CheckResult(False, "<type> check failed: <ExceptionType>: <message>").
     """
@@ -99,6 +140,18 @@ def grade(check: dict[str, Any], answer: str, workspace: str | Path, judge: Mode
                 return CheckResult(False, "rubric check needs a judge model")
             subject = resolve_inside(workspace, check["path"]).read_text() if "path" in check else answer
             return judge_verdict(judge, check["criteria"], subject)
+        if kind == "citations":
+            if web is None:
+                return CheckResult(False, "citations check needs the local web")
+            return check_citations(answer, check["facts"], web)
+        if kind == "command_succeeds":
+            argv = shlex.split(check["command"])
+            if argv and argv[0] == "python":
+                argv[0] = sys.executable
+            result = run_command(argv, Path(workspace), timeout_s=180, max_output=1_000_000)
+            ok = result.exit_code == 0
+            status = "timed out" if result.timed_out else f"exit code {result.exit_code}"
+            return CheckResult(ok, f"`{check['command']}` " + ("succeeded" if ok else f"failed ({status}): {result.output[-300:]}"))
         return CheckResult(False, f"unknown check type: {kind!r}")
     except KeyError as e:
         return CheckResult(False, f"{kind} check is missing {e}")

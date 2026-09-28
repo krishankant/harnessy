@@ -24,6 +24,7 @@ def server():
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_port}"
     srv.shutdown()
+    srv.server_close()
 
 
 def test_ok(server):

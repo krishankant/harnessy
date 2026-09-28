@@ -11,8 +11,12 @@ import yaml
 
 TOOLSETS = ("files", "memory")
 DIFFICULTIES = ("easy", "medium", "hard")
-CHECK_TYPES = ("file_exists", "file_contains", "file_lacks", "answer_contains", "answer_matches", "json_valid", "rubric")
-_KEYS = {"id", "prompt", "difficulty", "checks", "files", "toolsets", "max_steps", "system"}
+CHECK_TYPES = (
+    "file_exists", "file_contains", "file_lacks", "answer_contains", "answer_matches", "json_valid", "rubric",
+    "citations", "command_succeeds",  # week 8
+)
+AGENT_NAMES = ("research", "code", "data")  # week 8
+_KEYS = {"id", "prompt", "difficulty", "checks", "files", "toolsets", "max_steps", "system", "agent"}
 
 
 class TaskError(ValueError):
@@ -29,6 +33,7 @@ class EvalTask:
     toolsets: tuple[str, ...] = ()
     max_steps: int = 10
     system: str | None = None
+    agent: str | None = None  # week 8: build the trial with this capstone agent
 
 
 # --- Week 5 exercise -------------------------------------------------------------------
@@ -49,8 +54,9 @@ def load_task(path: str | Path) -> EvalTask:
     - toolsets (default []) not all in TOOLSETS -> "unknown toolsets: <bad ones joined ', '>"
     - files (default {}) not a dict of str -> "'files' must map paths to text"
     - max_steps (default 10) not an int >= 1 (bool doesn't count) -> "'max_steps' must be a positive integer"
+    - agent (default None; week 8) not in AGENT_NAMES -> "unknown agent: <agent>"
     Return EvalTask(str(id), str(prompt), difficulty, tuple(checks), dict(files), tuple(toolsets),
-    max_steps, system or None).
+    max_steps, system or None, agent).
     """
     raise NotImplementedError("Week 5 exercise: load_task")
 
@@ -59,9 +65,9 @@ def load_task(path: str | Path) -> EvalTask:
 
 
 def load_tasks(folder: str | Path, select: str | None = None) -> list[EvalTask]:
-    """Every *.yaml task in folder, sorted by file name. select keeps one difficulty or the ids
+    """Every *.yaml task in folder and its sub-folders, sorted by path. select keeps one difficulty or the ids
     starting with it. Duplicate ids raise TaskError."""
-    tasks = [load_task(p) for p in sorted(Path(folder).glob("*.yaml"))]
+    tasks = [load_task(p) for p in sorted(Path(folder).rglob("*.yaml"))]
     seen: set[str] = set()
     for t in tasks:
         if t.id in seen:

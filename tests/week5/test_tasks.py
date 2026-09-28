@@ -45,6 +45,7 @@ def test_a_valid_task(tmp_path):
         (lambda d: d.update(max_steps=0), "'max_steps' must be a positive integer"),
         (lambda d: d.update(files={"a.txt": 3}), "'files' must map paths to text"),
         (lambda d: d.update(colour="red"), "unknown keys: colour"),
+        (lambda d: d.update(agent="robot"), "unknown agent: robot"),
     ],
 )
 def test_invalid_tasks_name_the_file_and_the_problem(tmp_path, change, problem):

@@ -63,9 +63,9 @@ def rec(task_id, difficulty, trial, passed, steps, inp, out):
 
 def test_aggregate():
     s = aggregate([rec("a", "easy", 1, True, 2, 100, 10), rec("a", "easy", 2, False, 4, 200, 20), rec("b", "hard", 1, True, 3, 300, 30)])
-    assert s["tasks"]["a"] == {"difficulty": "easy", "trials": 2, "passed": 1, "pass_rate": 0.5, "mean_steps": 3.0, "mean_tokens": 165.0}
+    assert s["tasks"]["a"] == {"difficulty": "easy", "trials": 2, "passed": 1, "pass_rate": 0.5, "mean_steps": 3.0, "mean_tokens": 165.0, "mean_cost_usd": 0.0}
     assert s["tasks"]["b"]["pass_rate"] == 1.0
-    assert s["overall"] == {"trials": 3, "passed": 2, "pass_rate": 0.667, "mean_steps": 3.0, "mean_tokens": 220.0}
+    assert s["overall"] == {"trials": 3, "passed": 2, "pass_rate": 0.667, "mean_steps": 3.0, "mean_tokens": 220.0, "mean_cost_usd": 0.0}
 
 
 def stats(rate, steps, tokens):
@@ -93,3 +93,19 @@ def test_format_table_is_given():
     }
     table = format_table(s)
     assert "OVERALL" in table and "50%" in table and "1/2" in table
+
+
+def test_cost_is_recorded_and_averaged():
+    records = [
+        TrialRecord("a", "easy", 1, True, [], "end_turn", 1, 10, 1, cost_usd=0.02),
+        TrialRecord("a", "easy", 2, True, [], "end_turn", 1, 10, 1, cost_usd=0.04),
+    ]
+    s = aggregate(records)
+    assert s["tasks"]["a"]["mean_cost_usd"] == 0.03 and s["overall"]["mean_cost_usd"] == 0.03
+    assert "$0.0300" in format_table(s)
+
+
+def test_compare_skips_metrics_missing_from_old_results():
+    old = {"overall": stats(0.5, 3.0, 165.0), "tasks": {}}
+    new = {"overall": {**stats(0.5, 3.0, 165.0), "mean_cost_usd": 0.01}, "tasks": {}}
+    assert compare(old, new) == []

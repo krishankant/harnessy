@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 from typing import Callable, Literal
+from urllib.parse import urlparse
 
 from harnessy.hooks import Block, Hook
 from harnessy.types import ToolCall
@@ -20,6 +21,17 @@ def terminal_approver(call: ToolCall, input_fn: Callable[[str], str] = input, pr
     """Show the call and ask y/N on the terminal."""
     printer(f"\nThe agent wants to run {call.name}({json.dumps(call.arguments)[:300]})")
     return input_fn("Allow? [y/N] ").strip().lower() in ("y", "yes")
+
+
+def host_approver(hosts: list[str]) -> Callable[[ToolCall], bool]:
+    """An approver that allows a call only if its "url" argument points at one of these hosts
+    ("host:port" as in the URL). Anything without a url is declined."""
+    allowed = set(hosts)
+
+    def approve(call: ToolCall) -> bool:
+        return urlparse(str(call.arguments.get("url", ""))).netloc in allowed
+
+    return approve
 
 
 class ApprovalHook(Hook):

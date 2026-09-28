@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week5` passes (41 tests), and weeks 1–4 still pass after the wiring (section 5), and
+1. `uv run pytest tests/week5` passes (43 tests), and weeks 1–4 still pass after the wiring (section 5), and
 2. `uv run python -m scripts.evals --provider both --trials 3` prints a table for each provider, and changing one tool description visibly moves at least one number.
 
 ## 1. Read first
@@ -189,7 +189,7 @@ Rules the graders keep:
 
 `aggregate` and `compare` are your exercises. `scripts/evals.py`:
 
-- prints the table;
+- prints the table (with a cost column: it shows `$0.0000` until week 7 adds prices);
 - saves `evals/results/<timestamp>-<provider>.json`, which is git-ignored;
 - prints what changed since the previous run for that provider:
 

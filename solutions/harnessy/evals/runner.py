@@ -23,7 +23,7 @@ DEFAULT_SYSTEM = (
     "You are a careful assistant working in a small workspace folder. Use the tools when they help. "
     "Finish with a short, direct answer."
 )
-METRICS = ("pass_rate", "mean_steps", "mean_tokens")
+METRICS = ("pass_rate", "mean_steps", "mean_tokens", "mean_cost_usd")
 
 
 @dataclass
@@ -40,6 +40,7 @@ class TrialRecord:
     error: str | None = None
     trace: str | None = None
     answer: str = ""
+    cost_usd: float = 0.0
 
 
 # --- Given -----------------------------------------------------------------------------
@@ -81,6 +82,7 @@ def run_trial(task: EvalTask, model: Model, trial: int, judge: Model | None = No
     return TrialRecord(
         task.id, task.difficulty, trial, all(c["passed"] for c in checks), checks, result.stop_reason, len(result.steps),
         result.usage.input_tokens, result.usage.output_tokens, result.error, trace, result.final_text,
+        getattr(result, "cost_usd", 0.0),  # a week 5 loop has no costs yet
     )
 
 
@@ -103,11 +105,11 @@ def run_evals(
 
 
 def format_table(summary: dict[str, Any]) -> str:
-    rows = [("task", "level", "pass", "rate", "steps", "tokens")]
+    rows = [("task", "level", "pass", "rate", "steps", "tokens", "cost")]
     for task_id, s in summary["tasks"].items():
-        rows.append((task_id, s["difficulty"], f"{s['passed']}/{s['trials']}", f"{s['pass_rate']:.0%}", f"{s['mean_steps']:.1f}", f"{s['mean_tokens']:.0f}"))
+        rows.append((task_id, s["difficulty"], f"{s['passed']}/{s['trials']}", f"{s['pass_rate']:.0%}", f"{s['mean_steps']:.1f}", f"{s['mean_tokens']:.0f}", f"${s.get('mean_cost_usd', 0.0):.4f}"))
     o = summary["overall"]
-    rows.append(("OVERALL", "", f"{o['passed']}/{o['trials']}", f"{o['pass_rate']:.0%}", f"{o['mean_steps']:.1f}", f"{o['mean_tokens']:.0f}"))
+    rows.append(("OVERALL", "", f"{o['passed']}/{o['trials']}", f"{o['pass_rate']:.0%}", f"{o['mean_steps']:.1f}", f"{o['mean_tokens']:.0f}", f"${o.get('mean_cost_usd', 0.0):.4f}"))
     widths = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
     return "\n".join(
         "  ".join(cell.ljust(w) if i < 2 else cell.rjust(w) for i, (cell, w) in enumerate(zip(row, widths))) for row in rows
@@ -126,15 +128,16 @@ def _stats(records: list[TrialRecord]) -> dict[str, Any]:
         "pass_rate": round(passed / n, 3) if n else 0.0,
         "mean_steps": round(sum(r.steps for r in records) / n, 1) if n else 0.0,
         "mean_tokens": round(sum(r.input_tokens + r.output_tokens for r in records) / n, 1) if n else 0.0,
+        "mean_cost_usd": round(sum(r.cost_usd for r in records) / n, 4) if n else 0.0,
     }
 
 
 def aggregate(records: list[TrialRecord]) -> dict[str, Any]:
     """Summarize trial records:
-    {"tasks": {task_id: {"difficulty", "trials", "passed", "pass_rate", "mean_steps", "mean_tokens"}},
-     "overall": {"trials", "passed", "pass_rate", "mean_steps", "mean_tokens"}}
-    Tasks appear in first-seen order. pass_rate is rounded to 3 places, the means to 1;
-    tokens are input + output. Empty groups give 0.0.
+    {"tasks": {task_id: {"difficulty", "trials", "passed", "pass_rate", "mean_steps", "mean_tokens", "mean_cost_usd"}},
+     "overall": {"trials", "passed", "pass_rate", "mean_steps", "mean_tokens", "mean_cost_usd"}}
+    Tasks appear in first-seen order. pass_rate is rounded to 3 places, mean_steps and
+    mean_tokens to 1, mean_cost_usd to 4; tokens are input + output. Empty groups give 0.0.
     """
     by_task: dict[str, list[TrialRecord]] = {}
     for r in records:
@@ -149,13 +152,14 @@ def compare(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
     """What changed between two summaries, one line per changed metric (METRICS, in order):
     "<label>: <metric> <old:g> -> <new:g> (<new - old:+g>)". First "overall", then every task
     id in either summary, sorted: in both -> its changed metrics; only in new -> "<id>: new task";
-    only in old -> "<id>: removed". Nothing changed -> [].
+    only in old -> "<id>: removed". Nothing changed -> []. Skip a metric that is missing from
+    either side (results saved before week 7 have no mean_cost_usd).
     """
     lines: list[str] = []
 
     def diff(label: str, a: dict[str, Any], b: dict[str, Any]) -> None:
         for m in METRICS:
-            if a[m] != b[m]:
+            if m in a and m in b and a[m] != b[m]:
                 lines.append(f"{label}: {m} {a[m]:g} -> {b[m]:g} ({b[m] - a[m]:+g})")
 
     diff("overall", old["overall"], new["overall"])

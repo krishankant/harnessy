@@ -19,3 +19,6 @@ package = false
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+# A test module that uses @tool at import time can't load until the week 3 schema
+# exercises are done; report that error and still run every other test.
+addopts = "--continue-on-collection-errors"

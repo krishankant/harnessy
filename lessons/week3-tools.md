@@ -110,6 +110,8 @@ A rejected path raises `ValueError`, and the registry turns that into an error r
 
 Do them in this order. `@tool` needs 3a and 3b, and most other tests use `@tool`.
 
+Until 3a and 3b pass, four test files (`test_registry.py`, `test_web.py`, both `test_wiring.py`) show up as **collection errors**: they use `@tool` at import time, and the error names the exercise to finish. Every other test still runs.
+
 | # | Function | File | Tests |
 | --- | --- | --- | --- |
 | 3a | `json_type` | `tools/schema.py` | `uv run pytest tests/week3/test_schema.py -k "types or literal or optional or unsupported"` |

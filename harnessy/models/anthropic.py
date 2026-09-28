@@ -91,7 +91,7 @@ class AnthropicModel:
         self._client = client
         self.max_tokens = max_tokens
 
-    def complete(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None) -> ModelResponse:
+    def _request(self, messages: list[Message], tools: list[ToolSpec], system: str | None) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
             "model": self.name,
             "max_tokens": self.max_tokens,
@@ -104,5 +104,16 @@ class AnthropicModel:
         if self.name in FALLBACK_MODELS:
             kwargs["betas"] = ["server-side-fallback-2026-07-01"]
             kwargs["extra_body"] = {"fallbacks": "default"}
-        resp = self._client.beta.messages.create(**kwargs)
+        return kwargs
+
+    def complete(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None) -> ModelResponse:
+        resp = self._client.beta.messages.create(**self._request(messages, tools, system))
         return from_anthropic_response(resp.model_dump(mode="json", by_alias=True, exclude_none=True))
+
+    def stream(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None):
+        """Yield text chunks as they arrive, then the ModelResponse (week 7)."""
+        with self._client.beta.messages.stream(**self._request(messages, tools, system)) as stream:
+            for text in stream.text_stream:
+                yield text
+            final = stream.get_final_message()
+        yield from_anthropic_response(final.model_dump(mode="json", by_alias=True, exclude_none=True))

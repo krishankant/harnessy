@@ -31,6 +31,14 @@ class ScriptedModel:
             raise item
         return item
 
+    def stream(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None):
+        """The scripted reply's text in 8-character chunks, then the reply (week 7)."""
+        response = self.complete(messages, tools, system)
+        text = response.message.text
+        for i in range(0, len(text), 8):
+            yield text[i : i + 8]
+        yield response
+
 
 def text_reply(text: str, input_tokens: int = 10, output_tokens: int = 5, stop_reason: StopReason = "end_turn") -> ModelResponse:
     return ModelResponse(Message(role="assistant", text=text), stop_reason, Usage(input_tokens, output_tokens))

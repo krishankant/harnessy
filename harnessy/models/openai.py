@@ -17,6 +17,8 @@ from harnessy.types import (
     Usage,
 )
 
+from harnessy.models.openai_stream import merge_openai_chunks  # noqa: E402  (week 7)
+
 PROVIDER = "openai"
 
 _FINISH_REASONS: dict[str, StopReason] = {
@@ -86,9 +88,27 @@ class OpenAIModel:
             client = openai.OpenAI(base_url=base_url or os.environ.get("OPENAI_BASE_URL") or None)
         self._client = client
 
-    def complete(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None) -> ModelResponse:
+    def _request(self, messages: list[Message], tools: list[ToolSpec], system: str | None) -> dict[str, Any]:
         kwargs: dict[str, Any] = {"model": self.name, "messages": to_openai_messages(messages, system)}
         if tools:  # the API rejects an empty tools array
             kwargs["tools"] = to_openai_tools(tools)
-        resp = self._client.chat.completions.create(**kwargs)
+        return kwargs
+
+    def complete(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None) -> ModelResponse:
+        resp = self._client.chat.completions.create(**self._request(messages, tools, system))
         return from_openai_response(resp.model_dump(mode="json", exclude_none=True))
+
+    def stream(self, messages: list[Message], tools: list[ToolSpec], system: str | None = None):
+        """Yield text chunks as they arrive, then the ModelResponse (week 7)."""
+        chunks = []
+        response = self._client.chat.completions.create(
+            **self._request(messages, tools, system), stream=True, stream_options={"include_usage": True}
+        )
+        for chunk in response:
+            data = chunk.model_dump(mode="json", exclude_none=True)
+            chunks.append(data)
+            for choice in data.get("choices") or []:
+                text = (choice.get("delta") or {}).get("content")
+                if text:
+                    yield text
+        yield from_openai_response(merge_openai_chunks(chunks))

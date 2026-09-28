@@ -8,12 +8,13 @@ from dataclasses import dataclass, field
 from typing import Callable, Literal
 
 from harnessy.context import ContextManager
+from harnessy.hooks import Block, Hook, HookRunner
 from harnessy.models.base import Model
 from harnessy.tools.registry import ToolRegistry
-from harnessy.tracer import Tracer
+from harnessy.tracer import TraceHook, Tracer
 from harnessy.types import Message, ModelResponse, Tool, ToolCall, ToolResult, ToolSpec, Usage
 
-RunStopReason = Literal["end_turn", "max_steps", "max_tokens", "timeout", "refused", "model_error"]
+RunStopReason = Literal["end_turn", "max_steps", "max_tokens", "timeout", "refused", "model_error", "blocked"]
 
 
 @dataclass(frozen=True)
@@ -46,10 +47,13 @@ class Agent:
     printer: Callable[[str], object] = print
     context: ContextManager | None = None
     tracer: Tracer | None = None
+    hooks: list[Hook] | tuple[Hook, ...] = ()
     _registry: ToolRegistry = field(init=False, repr=False)
+    _hooks: HookRunner = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._registry = ToolRegistry(self.tools)
+        self._hooks = HookRunner([*self.hooks, *([TraceHook(self.tracer)] if self.tracer else [])])
 
     # --- Week 2 exercise ---------------------------------------------------------------
 
@@ -61,15 +65,11 @@ class Agent:
         start = self.clock()
 
         def finish(reason: RunStopReason, text: str = "", error: str | None = None) -> RunResult:
-            if self.tracer:
-                self.tracer.event(
-                    "stop", stop_reason=reason, steps=len(steps), input_tokens=usage.input_tokens,
-                    output_tokens=usage.output_tokens, error=error, final_text=text,
-                )
-            return RunResult(text, reason, steps, usage, messages, error)
+            result = RunResult(text, reason, steps, usage, messages, error)
+            self._hooks.on_finish(result)
+            return result
 
-        if self.tracer:
-            self.tracer.event("run_start", task=task, model=self.model.name, system=self.system, tools=[s.name for s in specs])
+        self._hooks.on_start(self, task)
 
         while True:
             if len(steps) >= self.max_steps:
@@ -81,29 +81,20 @@ class Agent:
 
             try:
                 view = self.context.prepare(messages) if self.context else messages
-                response = self.model.complete(view, specs, self.system)
+                view = self._hooks.before_model(view)
+                if isinstance(view, Block):
+                    return finish("blocked", error=view.reason)
+                response = self._hooks.after_model(self.model.complete(view, specs, self.system))
             except Exception as e:  # any model failure ends the run cleanly
                 return finish("model_error", error=f"{type(e).__name__}: {e}")
 
             usage = usage + response.usage
             messages.append(response.message)
-            if self.tracer:
-                self.tracer.event(
-                    "model_call", step=len(steps), stop_reason=response.stop_reason,
-                    input_tokens=response.usage.input_tokens, output_tokens=response.usage.output_tokens,
-                    text=response.message.text, tool_calls=response.message.tool_calls,
-                )
 
             # Run tools only from a reply that finished cleanly: a cut-off, failed or refused
             # reply may hold a half-written call.
             if response.message.tool_calls and response.stop_reason not in ("max_tokens", "error", "refused"):
                 results = tuple(self._run_tool(call) for call in response.message.tool_calls)
-                if self.tracer:
-                    for call, res in zip(response.message.tool_calls, results):
-                        self.tracer.event(
-                            "tool_result", step=len(steps), name=call.name, arguments=call.arguments,
-                            tool_call_id=res.tool_call_id, content=res.content, is_error=res.is_error,
-                        )
                 messages.append(Message(role="user", tool_results=results))
                 steps.append(Step(len(steps), response, results))
                 self._log(steps[-1])
@@ -116,10 +107,17 @@ class Agent:
                 return finish("refused", text)
             if response.stop_reason in ("error", "max_tokens"):
                 return finish("model_error", text, error=f"model stopped with '{response.stop_reason}'")
+            rejection = self._hooks.on_stop(RunResult(text, "end_turn", steps, usage, messages))
+            if rejection:
+                messages.append(Message(role="user", text=rejection))
+                continue
             return finish("end_turn", text)
 
     def _run_tool(self, call: ToolCall) -> ToolResult:
-        return self._registry.call(call)
+        checked = self._hooks.before_tool(call)
+        if isinstance(checked, Block):
+            return self._hooks.after_tool(call, ToolResult(call.id, checked.reason, is_error=True))
+        return self._hooks.after_tool(checked, self._registry.call(checked))
 
     # --- Given -------------------------------------------------------------------------
 

@@ -6,16 +6,19 @@ number to watch, and the saved summaries let you compare before and after a chan
 from __future__ import annotations
 
 import tempfile
-from dataclasses import dataclass, field
+from contextlib import ExitStack
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
+from harnessy.agents import AGENTS
 from harnessy.evals.graders import grade
 from harnessy.evals.tasks import EvalTask
 from harnessy.loop import Agent
 from harnessy.memory import MemoryStore, memory_tools
 from harnessy.models.base import Model
 from harnessy.tools.files import file_tools, resolve_inside
+from harnessy.tools.localweb import LocalWeb
 from harnessy.tracer import Tracer
 from harnessy.types import Tool
 
@@ -55,29 +58,55 @@ def build_tools(task: EvalTask, workspace: Path) -> list[Tool]:
     return tools
 
 
-def run_trial(task: EvalTask, model: Model, trial: int, judge: Model | None = None, trace_dir: str | Path | None = None) -> TrialRecord:
-    """One trial in a fresh temporary workspace. Never raises: a crash is a failed record."""
+def find_corpus() -> Path:
+    """evals/corpus/, found by walking up from this file (works from both trees)."""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "evals" / "corpus").is_dir():
+            return parent / "evals" / "corpus"
+    return Path("evals") / "corpus"
+
+
+def run_trial(
+    task: EvalTask,
+    model: Model,
+    trial: int,
+    judge: Model | None = None,
+    trace_dir: str | Path | None = None,
+    corpus: str | Path | None = None,
+) -> TrialRecord:
+    """One trial in a fresh temporary workspace. Never raises: a crash is a failed record.
+    A task with an agent (week 8) is built by that agent's make_agent; research trials get a
+    LocalWeb on the corpus for the length of the trial."""
     trace = str(Path(trace_dir) / f"{task.id}-{trial}.jsonl") if trace_dir else None
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
         workspace = Path(tmp)
+        web = None
         try:
             for rel, text in task.files.items():
                 target = resolve_inside(workspace, rel)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(text)
-            agent = Agent(
-                model,
-                tools=build_tools(task, workspace),
-                system=task.system or DEFAULT_SYSTEM,
-                max_steps=task.max_steps,
-                tracer=Tracer(trace) if trace else None,
-            )
+            tracer = Tracer(trace) if trace else None
+            if task.agent:
+                context = {}
+                if task.agent == "research":
+                    web = stack.enter_context(LocalWeb(corpus or find_corpus()))
+                    context["web"] = web
+                agent = replace(AGENTS[task.agent](model, workspace, **context), tracer=tracer)
+            else:
+                agent = Agent(
+                    model,
+                    tools=build_tools(task, workspace),
+                    system=task.system or DEFAULT_SYSTEM,
+                    max_steps=task.max_steps,
+                    tracer=tracer,
+                )
             result = agent.run(task.prompt)
         except Exception as e:
             return TrialRecord(task.id, task.difficulty, trial, False, [], "crash", 0, 0, 0, f"{type(e).__name__}: {e}", trace)
         checks = []
         for check in task.checks:
-            outcome = grade(check, result.final_text, workspace, judge)
+            outcome = grade(check, result.final_text, workspace, judge, web)
             checks.append({"type": check["type"], "passed": outcome.passed, "detail": outcome.detail})
     return TrialRecord(
         task.id, task.difficulty, trial, all(c["passed"] for c in checks), checks, result.stop_reason, len(result.steps),

@@ -2,12 +2,12 @@
 
 A small agent harness you build yourself, one week at a time. It works with any model provider: Anthropic, OpenAI, or a local model through Ollama. It follows the 8-week *Harness Engineering* learning plan. Each week you read a short lesson, fill in the missing pieces of the code, and make the tests pass.
 
-This repo currently covers **week 1** (a provider-neutral model interface), **week 2** (the agent loop), **week 3** (tools) and **week 4** (context and memory).
+This repo currently covers **week 1** (a provider-neutral model interface), **week 2** (the agent loop), **week 3** (tools), **week 4** (context and memory), **week 5** (traces and evals) and **week 6** (hooks, approvals, subagents and planning).
 
 ## Setup
 
 ```bash
-uv sync                  # installs anthropic, openai, python-dotenv and pytest
+uv sync                  # installs anthropic, openai, python-dotenv, pyyaml and pytest
 cp .env.example .env     # then fill in your keys and model names
 ```
 
@@ -30,7 +30,7 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/models/anthropic.py` | 1 | **Exercise:** 4 translation functions (`AnthropicModel.complete` is given) |
 | `harnessy/models/openai.py` | 1 | **Exercise:** 4 translation functions (`OpenAIModel.complete` is given) |
 | `harnessy/models/scripted.py` | 2 | Given: a fake model for tests |
-| `harnessy/loop.py` | 2–4 | **Exercise:** `Agent.run` and `Agent._run_tool`; weeks 3–4 add *wire it in* edits |
+| `harnessy/loop.py` | 2–6 | **Exercise:** `Agent.run` and `Agent._run_tool`; weeks 3–6 add *wire it in* edits |
 | `scripts/week1_compare.py` | 1 | Given: the same question on both providers |
 | `scripts/week2_demo.py` | 2 | Given: the loop answering a two-tool question |
 | `harnessy/tools/schema.py` | 3 | **Exercise:** `json_type`, `schema_from_function` (`@tool` and `parse_docstring` are given) |
@@ -41,6 +41,18 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/memory.py` | 4 | **Exercise:** `MemoryStore.recall` (`memory_tools` is given) |
 | `scripts/week3_demo.py` | 3 | Given: an agent writing and reading a file in a temp workspace |
 | `scripts/week4_demo.py` | 4 | Given: a long task with and without a `ContextManager`, then memory across two runs |
+| `harnessy/tracer.py` | 5 | **Exercise:** `Tracer.event`, `format_timeline` (`TraceHook` is given, for week 6) |
+| `harnessy/evals/tasks.py` | 5 | **Exercise:** `load_task` (`load_tasks` is given) |
+| `harnessy/evals/graders.py` | 5 | **Exercise:** `grade`, `judge_verdict` |
+| `harnessy/evals/runner.py` | 5 | **Exercise:** `aggregate`, `compare` (`run_trial`, `run_evals`, `format_table` are given) |
+| `evals/tasks/*.yaml` | 5 | Given: 15 eval tasks (5 easy, 5 medium, 5 hard) |
+| `scripts/trace_view.py` | 5 | Given: print a trace as a timeline |
+| `scripts/evals.py` | 5 | Given: run the evals, print and save the results, compare with the last run |
+| `harnessy/hooks.py` | 6 | **Exercise:** `HookRunner` (`Hook`, `Block`, `StopCheck` are given) |
+| `harnessy/approvals.py` | 6 | **Exercise:** `ApprovalHook.before_tool` (`terminal_approver` is given) |
+| `harnessy/subagents.py` | 6 | **Exercise:** `subagent_tool` |
+| `harnessy/todo.py` | 6 | **Exercise:** `TodoList.apply`, `render`, `before_model` |
+| `scripts/week6_demo.py` | 6 | Given: an approval prompt, then a two-subagent task |
 
 ## Checking against the reference solutions
 
@@ -59,7 +71,8 @@ This is handled in `tests/conftest.py` and `scripts/__init__.py`. Look at the so
 harnessy/            your copy: the exercises live here
 solutions/harnessy/  reference copy, complete
 lessons/             one lesson per week
-tests/week1…week4/  offline tests (fixtures in tests/fixtures/)
+tests/week1…week6/  offline tests (fixtures in tests/fixtures/)
+evals/tasks/         eval tasks (YAML); evals/results/ holds saved runs and traces (git-ignored)
 scripts/             live demos (need .env)
 docs/superpowers/    the design spec and implementation plan for this repo
 ```

@@ -9,9 +9,10 @@ import urllib.request
 from harnessy.tools.schema import tool
 
 
+# Tagged as untrusted input AND as a way out (week 7): a URL can carry data away.
 @tool(timeout_s=15, tags={"untrusted_input", "external_send"})
 def http_get(url: str, max_bytes: int = 200_000) -> str:
-    """Fetch a URL with HTTP GET and return the status code and the body as text. Tagged as untrusted input and as a way out: a URL can carry data away.
+    """Fetch a URL with HTTP GET and return the status code and the body as text.
 
     Args:
         url: An http:// or https:// URL.

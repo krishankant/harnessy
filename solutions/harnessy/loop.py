@@ -10,6 +10,7 @@ from typing import Callable, Literal
 from harnessy.context import ContextManager
 from harnessy.models.base import Model
 from harnessy.tools.registry import ToolRegistry
+from harnessy.tracer import Tracer
 from harnessy.types import Message, ModelResponse, Tool, ToolCall, ToolResult, ToolSpec, Usage
 
 RunStopReason = Literal["end_turn", "max_steps", "max_tokens", "timeout", "refused", "model_error"]
@@ -44,6 +45,7 @@ class Agent:
     verbose: bool = False
     printer: Callable[[str], object] = print
     context: ContextManager | None = None
+    tracer: Tracer | None = None
     _registry: ToolRegistry = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -59,7 +61,15 @@ class Agent:
         start = self.clock()
 
         def finish(reason: RunStopReason, text: str = "", error: str | None = None) -> RunResult:
+            if self.tracer:
+                self.tracer.event(
+                    "stop", stop_reason=reason, steps=len(steps), input_tokens=usage.input_tokens,
+                    output_tokens=usage.output_tokens, error=error, final_text=text,
+                )
             return RunResult(text, reason, steps, usage, messages, error)
+
+        if self.tracer:
+            self.tracer.event("run_start", task=task, model=self.model.name, system=self.system, tools=[s.name for s in specs])
 
         while True:
             if len(steps) >= self.max_steps:
@@ -77,11 +87,23 @@ class Agent:
 
             usage = usage + response.usage
             messages.append(response.message)
+            if self.tracer:
+                self.tracer.event(
+                    "model_call", step=len(steps), stop_reason=response.stop_reason,
+                    input_tokens=response.usage.input_tokens, output_tokens=response.usage.output_tokens,
+                    text=response.message.text, tool_calls=response.message.tool_calls,
+                )
 
             # Run tools only from a reply that finished cleanly: a cut-off, failed or refused
             # reply may hold a half-written call.
             if response.message.tool_calls and response.stop_reason not in ("max_tokens", "error", "refused"):
                 results = tuple(self._run_tool(call) for call in response.message.tool_calls)
+                if self.tracer:
+                    for call, res in zip(response.message.tool_calls, results):
+                        self.tracer.event(
+                            "tool_result", step=len(steps), name=call.name, arguments=call.arguments,
+                            tool_call_id=res.tool_call_id, content=res.content, is_error=res.is_error,
+                        )
                 messages.append(Message(role="user", tool_results=results))
                 steps.append(Step(len(steps), response, results))
                 self._log(steps[-1])

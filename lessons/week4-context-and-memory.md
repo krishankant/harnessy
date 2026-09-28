@@ -46,6 +46,27 @@ view  ──►  model.complete(view, tools, system)
 
 A view may **drop whole turns**, and it may **replace the content of old tool results**. It never edits an assistant turn, so `raw` replay keeps working.
 
+What `ContextManager.prepare` does on every call:
+
+```mermaid
+flowchart TB
+  H[("history<br/>append-only, every turn")] --> NEW{"same first message<br/>as last time?"}
+  NEW -- no --> RESET["new run: forget the cut"]
+  NEW -- yes --> CLR
+  RESET --> CLR["clear_old_results<br/>results older than the last 3 and 500+ chars<br/>become stubs"]
+  CLR --> STICKY["view at the current cut<br/>(prefix unchanged: cache keeps hitting)"]
+  STICKY --> FIT{"estimate_tokens(view)<br/>over budget?"}
+  FIT -- no --> OUT(["view sent to the model"])
+  FIT -- yes --> CUT["find_cut<br/>earliest assistant turn that fits<br/>budget × 0.5 − reserve"]
+  CUT --> STRAT{"strategy"}
+  STRAT -- DropOldest --> D["task + everything after the cut"]
+  STRAT -- Summarize --> SUM["model summarizes the dropped span<br/>read from the ORIGINAL history"]
+  D --> OUT
+  SUM --> OUT
+```
+
+*The full version, with what later weeks add, is Fig 7 in [docs/architecture.md](../docs/architecture.md#fig-7-building-the-view-from-the-history).*
+
 ## 4. Where to cut
 
 Say the view keeps the task message and then everything from index `cut` on. Where can `cut` go?
@@ -59,6 +80,17 @@ assistant: …
 ```
 
 That's a tool result with no matching call, and Anthropic rejects the request. It also breaks the user/assistant alternation. If you cut right before an assistant turn, each tool call stays with its results and the roles still alternate. `find_cut` returns the **earliest** such cut that fits the target, so the view drops as little as possible.
+
+A safe cut and an unsafe one, on the same history:
+
+```mermaid
+flowchart LR
+  T["user: task"] --> A1["assistant: call c1"] --> U1["user: result c1"] --> A2["assistant: call c2"] --> U2["user: result c2"]
+  OK(["cut here: before an assistant turn"]) -.-> A2
+  BAD(["never here: result c2 would lose its call"]) -.-> U2
+  classDef bad fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  class BAD bad
+```
 
 ## 5. Two strategies
 

@@ -46,6 +46,17 @@ and `@tool` produces what the model sees:
 
 The type hints, the default values and the docstring become the schema. There's one source of truth, and it can't drift from the function.
 
+From your function to what the model sees:
+
+```mermaid
+flowchart LR
+  F["def add(a: int, b: int) -> int<br/>docstring + type hints"] --> D["@tool"]
+  D --> S["ToolSpec<br/>name · description · JSON Schema"]
+  S --> M["the model"]
+  D --> T["Tool(spec, fn)"]
+  T --> R["ToolRegistry"]
+```
+
 ## 3. Tour of the given code
 
 - **`harnessy/types.py`: `Tool` moved here** from `loop.py`, and gained two optional fields, `timeout_s` and `max_chars`, for per-tool limits. `from harnessy.loop import Tool` still works. (It moved because the registry needs `Tool` and the loop needs the registry. Leaving it in `loop.py` would be a circular import.)
@@ -86,6 +97,32 @@ Tool 'http_get' timed out after 15s. Try a smaller request.
 The model reads these on the next step. A good error message is the cheapest way to get a model to fix its own call. The `test_wiring.py` "done when" test checks exactly this: a bad call, a readable error, then a fixed call.
 
 **Timeouts, with one caveat.** The registry runs each tool in a worker thread and waits at most `timeout_s`. When the wait runs out, the loop moves on, but Python can't kill a thread, so a hung tool keeps running in the background. Make it a **daemon** thread (`threading.Thread(..., daemon=True)`): a `ThreadPoolExecutor` worker would keep your whole program from exiting until the hung tool finished, possibly forever. `test_a_hung_tool_does_not_keep_the_process_alive` checks this. A thread that keeps running is fine for reads. It's not fine for a tool that changes things. Week 7 moves risky tools into a subprocess that can be killed.
+
+Every path a call can take through `ToolRegistry.call`:
+
+```mermaid
+flowchart LR
+  IN(["ToolCall"]) --> K{"known tool?"}
+  K -- no --> E1["error: Unknown tool 'x'.<br/>Available tools: …"]
+  K -- yes --> V{"validate_args<br/>against the schema"}
+  V -- problems --> E2["error: Invalid arguments …<br/>Expected parameters: a: integer, …"]
+  V -- ok --> N["drop null optional args<br/>so defaults apply"]
+  N --> T["run fn in a daemon thread<br/>wait timeout_s"]
+  T -- still running --> E3["error: timed out after Ns"]
+  T -- TypeError --> E4["error: Bad arguments …"]
+  T -- other exception --> E5["error: Tool 'x' failed: Type: msg"]
+  T -- returned --> S["str() it, then truncate<br/>to max_chars with a note"]
+  S --> OUT(["ToolResult"])
+  E1 --> OUT
+  E2 --> OUT
+  E3 --> OUT
+  E4 --> OUT
+  E5 --> OUT
+  classDef err fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  class E1,E2,E3,E4,E5 err
+```
+
+*Fig 6 in [docs/architecture.md](../docs/architecture.md#fig-6-a-tool-call-through-the-registry).*
 
 ## 6. Truncation
 

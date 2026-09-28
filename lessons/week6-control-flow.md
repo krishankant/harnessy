@@ -51,6 +51,53 @@ on_finish(result)             (every way a run ends; observe only)
 
 Exceptions in hooks are **not** caught: hooks are your code, and a bug in one should be loud. The one place they're caught is `before_model` and `after_model`, which sit inside the model call's `try`. A crash there ends the run as `model_error`, like any other failure of the model call.
 
+The hook points in a full run, in the order the loop calls them:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Caller
+  participant A as Agent.run
+  participant H as HookRunner
+  participant C as ContextManager
+  participant M as Model
+  participant R as ToolRegistry
+  U->>A: run(task)
+  A->>H: on_start(agent, task)
+  loop every step
+    A->>A: check limits: steps, tokens, time
+    A->>C: prepare(history)
+    C-->>A: view
+    A->>H: before_model(view)
+    H-->>A: view (or Block ends the run)
+    A->>M: complete(view, specs, system)
+    M-->>A: ModelResponse
+    A->>H: after_model(response)
+    alt tool calls and a clean stop
+      loop each call, in order
+        A->>H: before_tool(call)
+        alt allowed
+          A->>R: call(call)
+          R-->>A: ToolResult
+        else blocked
+          H-->>A: Block(reason) becomes an error result
+        end
+        A->>H: after_tool(call, result)
+      end
+    else the model says it is done
+      A->>H: on_stop(result)
+      alt rejected
+        H-->>A: "not yet" goes back as a user message
+      else accepted
+        A->>H: on_finish(result)
+        A-->>U: RunResult
+      end
+    end
+  end
+```
+
+*The full version, with what later weeks add, is Fig 4 in [docs/architecture.md](../docs/architecture.md#fig-4-one-agent-run).*
+
 ## 4. Tracing becomes a hook
 
 `TraceHook(tracer)` (given, at the bottom of `tracer.py`) emits exactly the week 5 events from `on_start`, `after_model`, `after_tool` and `on_finish`. `Agent(tracer=…)` still works: `__post_init__` turns it into a `TraceHook` and adds it last, so it records what the other hooks decided. The `test_every_exit_path_writes_a_stop_event` test from week 5 keeps passing, now through the hook.
@@ -73,6 +120,22 @@ A blocked call is **not** a crash. The model gets an error result, "The user dec
 
 `terminal_approver` asks y/N on the terminal. It's just a function from `ToolCall` to `bool`, so a web UI, a Slack button or an allow-list are all drop-in replacements.
 
+How `ApprovalHook.before_tool` decides:
+
+```mermaid
+flowchart LR
+  C(["ToolCall"]) --> P{"policy for this tool<br/>(else the default)"}
+  P -- allow --> RUN(["None: the call runs"])
+  P -- deny --> B1(["Block: not allowed by policy"])
+  P -- ask --> Q{"approver set?"}
+  Q -- no --> B2(["Block: needs approval"])
+  Q -- yes --> Y{"approver(call)"}
+  Y -- True --> RUN
+  Y -- False --> B3(["Block: the user declined"])
+  classDef bad fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  class B1,B2,B3 bad
+```
+
 ## 6. Subagents
 
 `subagent_tool(model, tools)` gives the model a `spawn_subagent(task, tools)` tool. Each call runs a **new** `Agent`, with:
@@ -88,6 +151,31 @@ Only the child's final answer comes back. In the demo, the helpers read four fil
 The cost: every child is a whole agent run. The Anthropic post measured multi-agent research at about 15× the tokens of a chat. Use subagents when the parent's context is the bottleneck, not by default.
 
 `@tool(timeout_s=600)`: the registry's default 30-second timeout would cut a child off mid-run, so the tool raises its own limit.
+
+A delegation, step by step:
+
+```mermaid
+sequenceDiagram
+  participant P as Parent Agent
+  participant R as Registry
+  participant S as spawn_subagent
+  participant C as Child Agent
+  participant M as Model
+  P->>R: call spawn_subagent(task, tools=[read_file])
+  R->>S: run (timeout 600 s)
+  S->>C: new Agent(named tools, hooks passed down, max_steps 8)
+  Note over C: fresh context: only the task text
+  loop child steps
+    C->>M: complete(child view)
+    M-->>C: tool calls or answer
+  end
+  C-->>S: RunResult
+  S-->>R: final text only
+  R-->>P: ToolResult: the answer
+  Note over P: file contents never reach the parent's history
+```
+
+*Fig 10 in [docs/architecture.md](../docs/architecture.md#fig-10-subagents).*
 
 ## 7. The todo list
 

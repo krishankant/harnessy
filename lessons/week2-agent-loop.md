@@ -47,6 +47,34 @@ Two details matter:
 - **All results go back in one turn.** Split them across turns and some models learn to stop making parallel calls.
 - **Every step is recorded** (`Step`) with its response and tool results. In week 5 this becomes your trace.
 
+The same run as a sequence diagram:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Caller
+  participant A as Agent.run
+  participant M as Model
+  participant T as Tools
+  U->>A: run("What is 17 + 25, and what time is it?")
+  loop every step
+    A->>A: check limits: steps, tokens, time
+    A->>M: complete(messages, specs, system)
+    M-->>A: ModelResponse
+    alt tool calls and a clean stop
+      A->>T: add(17, 25)
+      T-->>A: "42"
+      A->>T: get_time()
+      T-->>A: "10:56"
+      Note over A: append ONE user turn holding both results
+    else the model answers
+      A-->>U: RunResult(final_text, "end_turn", steps, usage)
+    end
+  end
+```
+
+*The full version, with what later weeks add, is Fig 4 in [docs/architecture.md](../docs/architecture.md#fig-4-one-agent-run).*
+
 ## 3. Why the loop never raises
 
 A loop that raises an exception throws away everything the run did so far. harnessy's loop turns every failure into data instead:
@@ -74,6 +102,31 @@ Every loop needs a limit, or one confused model can run forever and spend real m
 | `max_cost_usd` (week 7) | | Money, directly |
 
 **Check every limit *before* each model call**, not after. The model call is where the time and money go, so that's the moment to decide whether you can afford another one.
+
+Every way a week 2 run can end:
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> Limits
+  Limits --> max_steps : steps used up
+  Limits --> max_tokens : token budget spent
+  Limits --> timeout : clock ran out
+  Limits --> Model : all clear
+  Model --> model_error : exception, error, or max_tokens
+  Model --> refused : refusal
+  Model --> Tools : tool calls, clean stop
+  Tools --> Limits
+  Model --> end_turn : answer
+  max_steps --> [*]
+  max_tokens --> [*]
+  timeout --> [*]
+  model_error --> [*]
+  refused --> [*]
+  end_turn --> [*]
+```
+
+*The full version, with what later weeks add, is Fig 5 in [docs/architecture.md](../docs/architecture.md#fig-5-how-a-run-ends).*
 
 ## 5. Truncated tool calls
 

@@ -20,6 +20,78 @@ A harness is generic if very different agents run on it **without changes to the
 
 Each is *configuration only*: a system prompt, tools, hooks and limits, passed to the same `Agent`. Look at `harnessy/agents/*.py`. Each `make_agent` is a few lines. Whatever you had to change in `harnessy` to make one of them work is what you learned, so write it down.
 
+Everything you've built, in one picture:
+
+```mermaid
+flowchart TB
+  subgraph EVAL["Evals · week 5 and capstone · week 8"]
+    TASKS["YAML tasks<br/>evals/tasks · evals/capstone"]
+    TRIAL["run_trial · fresh workspace"]
+    GRADE["grade · judge · citations · command_succeeds"]
+    AGENTS["research · code · data<br/>make_agent = configuration only"]
+    TASKS --> TRIAL
+    TRIAL --> AGENTS
+    TRIAL --> GRADE
+  end
+
+  subgraph CORE["Agent · the loop you write · week 2"]
+    RUN["Agent.run(task)<br/>limits: steps · tokens · time · cost"]
+    STREAM["Agent.stream(task) · week 7"]
+  end
+
+  CTX["ContextManager · week 4<br/>history → view"]
+  HOOKS["HookRunner · week 6"]
+  REG["ToolRegistry · week 3<br/>validate · timeout · truncate"]
+  SAFE["check_trifecta · week 7<br/>runs when the agent is built"]
+  COST["price_for · cost_usd · week 7"]
+
+  subgraph HOOKLIST["Hooks"]
+    AH["ApprovalHook"]
+    TD["TodoList"]
+    SC["StopCheck"]
+    TH["TraceHook → Tracer JSONL"]
+  end
+
+  subgraph TOOLS["Tools built with @tool"]
+    F["read_file · write_file · edit_file"]
+    W["web_search · http_get"]
+    MEM["remember · recall"]
+    SH["run_shell · run_tests<br/>sandboxed subprocess"]
+    D["list_tables · run_sql · plot_query"]
+    SUB["spawn_subagent"]
+    OUT["send_email · outbox"]
+  end
+
+  subgraph MODELS["Models"]
+    RETRY["RetryingModel · week 7"]
+    ANT["AnthropicModel"]
+    OAI["OpenAIModel · also Ollama"]
+    SCR["ScriptedModel · tests"]
+  end
+
+  AGENTS --> RUN
+  STREAM --> RUN
+  RUN --> CTX
+  RUN --> HOOKS
+  RUN --> REG
+  RUN -.-> SAFE
+  RUN -.-> COST
+  HOOKS --> HOOKLIST
+  REG --> TOOLS
+  SUB -. "new child Agent" .-> RUN
+  RUN -- "complete(view, specs, system)" --> RETRY
+  RETRY --> ANT
+  RETRY --> OAI
+  RUN --> SCR
+
+  classDef safety fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  classDef plain fill:#ffffff,stroke:#9aa1a8,color:#1b2230
+  class SAFE,AH,SH,OUT safety
+  class TASKS,TRIAL,GRADE,AGENTS,F,W,MEM,D,SUB,TD,SC,TH,ANT,OAI,SCR,COST plain
+```
+
+*Fig 1 in [docs/architecture.md](../docs/architecture.md#fig-1-system-architecture).*
+
 ## 2. The three agents
 
 | | Research | Code | Data |
@@ -30,6 +102,35 @@ Each is *configuration only*: a system prompt, tools, hooks and limits, passed t
 | Tasks check | the answer is right **and** every cited page exists and supports it | the repo's tests pass **and** a hidden check runs the code directly | the number or name matches a known answer |
 
 The 15 tasks live in `evals/capstone/{research,code,data}/`. Each YAML names its agent (`agent: research`), and the runner builds that agent for the trial.
+
+The three configurations on the same `Agent`:
+
+```mermaid
+flowchart LR
+  subgraph R["Research"]
+    R1["web_search · http_get<br/>remember · recall · spawn_subagent"]
+    R2["ApprovalHook: http_get only to the local web<br/>guard passed to helpers"]
+    R3["ContextManager 20k · 15 steps"]
+  end
+  subgraph C["Code"]
+    C1["read_file · write_file<br/>edit_file · run_tests"]
+    C2["ApprovalHook on run_tests<br/>StopCheck runs pytest"]
+    C3["20 steps"]
+  end
+  subgraph D["Data"]
+    D1["list_tables · run_sql · plot_query"]
+    D2["SQLite read-only + authorizer"]
+    D3["12 steps"]
+  end
+  H(["the same Agent, unchanged"])
+  R --> H
+  C --> H
+  D --> H
+  classDef safety fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  class R2,C2,D2 safety
+```
+
+*Fig 14 in [docs/architecture.md](../docs/architecture.md#fig-14-the-three-capstone-agents-on-one-harness).*
 
 ## 3. The local web
 
@@ -109,6 +210,35 @@ Results are saved as `evals/results/<time>-capstone-<provider>.json`, so they're
 - Did the researcher cite a page it never fetched?
 - Did the programmer edit the tests?
 - Did the analyst answer before querying?
+
+One capstone trial. Agent tasks are built by their `make_agent`, and research trials get a local web:
+
+```mermaid
+sequenceDiagram
+  participant CLI as scripts.evals
+  participant RT as run_trial
+  participant WS as temp workspace
+  participant AG as Agent
+  participant GR as grade
+  CLI->>RT: task, model, trial n
+  RT->>WS: write the task's files
+  alt task names an agent (week 8)
+    RT->>RT: start LocalWeb for research tasks
+    RT->>AG: AGENTS[name].make_agent(…) + tracer
+  else core task (week 5)
+    RT->>AG: Agent(tools from toolsets, tracer)
+  end
+  AG->>AG: run(prompt), traced to JSONL
+  AG-->>RT: RunResult
+  loop each check
+    RT->>GR: check, answer, workspace, judge, web
+    GR-->>RT: CheckResult(passed, detail)
+  end
+  RT-->>CLI: TrialRecord (a crash is a failed record, never an exception)
+  CLI->>CLI: aggregate, print table, save JSON, compare with last run
+```
+
+*Fig 13 in [docs/architecture.md](../docs/architecture.md#fig-13-one-eval-trial).*
 
 ## 9. Compare
 

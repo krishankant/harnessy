@@ -28,6 +28,25 @@ So harnessy draws one line. Everything inside the harness speaks **harnessy type
 
 This week you write the translation code for two adapters.
 
+The same boundary as a diagram. Only the adapters know a provider's format exists:
+
+```mermaid
+flowchart LR
+  subgraph H["inside the harness: harnessy types only"]
+    L["loop · tools · evals"]
+  end
+  subgraph AD["adapters: this week"]
+    AA["AnthropicModel"]
+    OA["OpenAIModel"]
+  end
+  L -- "Message · ToolSpec" --> AA
+  L -- "Message · ToolSpec" --> OA
+  AA -- "ModelResponse" --> L
+  OA -- "ModelResponse" --> L
+  AA <--> AP["Anthropic Messages API"]
+  OA <--> OP["OpenAI Chat Completions<br/>(or Ollama via base_url)"]
+```
+
 ## 3. Why a neutral format: what the adapters hide
 
 | | Anthropic Messages API | OpenAI Chat Completions |
@@ -62,6 +81,57 @@ Read these files before writing anything. They're short.
 
 **The `complete()` methods in both adapters are given.** They make the network call and hand a plain dict to the functions you write. That split is on purpose: translation is pure data-in, data-out, so it's easy to test without a network.
 
+How the types in `types.py` fit together:
+
+```mermaid
+classDiagram
+  direction LR
+  class Message {
+    +role
+    +text
+    +tool_calls
+    +tool_results
+    +raw
+  }
+  class ToolCall {
+    +id
+    +name
+    +arguments
+  }
+  class ToolResult {
+    +tool_call_id
+    +content
+    +is_error
+  }
+  class ProviderRaw {
+    +provider
+    +content
+  }
+  class ModelResponse {
+    +message
+    +stop_reason
+    +usage
+  }
+  class Usage {
+    +input_tokens
+    +output_tokens
+    +total()
+  }
+  class ToolSpec {
+    +name
+    +description
+    +parameters
+  }
+  Message "1" o-- "*" ToolCall : assistant turn
+  Message "1" o-- "*" ToolResult : user turn
+  Message "1" o-- "0..1" ProviderRaw : replayed verbatim
+  ModelResponse --> Message
+  ModelResponse --> Usage
+  ToolResult ..> ToolCall : answers by id
+```
+
+*The full version, with what later weeks add, is Fig 2 in [docs/architecture.md](../docs/architecture.md#fig-2-core-types).*
+
 ## 5. The opaque-state problem
 
 This is the most important idea this week.
@@ -76,6 +146,25 @@ harnessy's neutral `Message` has no field for "Anthropic thinking block", and it
 - **Histories are append-only.** Never edit or drop an earlier turn in place. When you build context compaction in week 4, you'll summarize by *appending*, not by rewriting old turns, for exactly this reason.
 
 The OpenAI Chat Completions format has no opaque state like this, so the OpenAI adapter always rebuilds. It still stores `raw` for debugging.
+
+What happens to `raw` on the next turn, for each adapter:
+
+```mermaid
+sequenceDiagram
+  participant L as Loop
+  participant A as AnthropicModel
+  participant O as OpenAIModel
+  participant API as Provider API
+  L->>A: complete(history)
+  A->>API: request
+  API-->>A: content: thinking + text + tool_use
+  A-->>L: Message(text, tool_calls, raw=ProviderRaw("anthropic", content))
+  Note over L: the history keeps that Message unchanged
+  L->>A: complete(history + results)
+  A->>API: replays raw.content verbatim (the API checks the thinking blocks)
+  L->>O: complete(same history)
+  O->>API: ignores raw, rebuilds from text + tool_calls
+```
 
 ## 6. Exercises
 

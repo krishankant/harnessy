@@ -55,6 +55,25 @@ There are no timers in the loop. **How long something took is the gap between tw
 
 JSON Lines is deliberately plain. You can `grep` it, `jq` it, load it into a notebook, or diff two runs, and a crash halfway through still leaves every line written so far.
 
+When your loop writes each event:
+
+```mermaid
+sequenceDiagram
+  participant A as Agent.run
+  participant M as Model
+  participant T as Tracer (JSONL)
+  A->>T: run_start (task, model, system, tools)
+  loop every step
+    A->>M: complete(...)
+    M-->>A: ModelResponse
+    A->>T: model_call (step, stop_reason, tokens, text, tool_calls)
+    opt tool calls
+      A->>T: tool_result per call (step, name, arguments, content, is_error)
+    end
+  end
+  A->>T: stop (stop_reason, steps, tokens, error, final_text) from finish()
+```
+
 ## 4. Reading a timeline
 
 `format_timeline` (your exercise) turns a trace back into something a person can read:
@@ -199,6 +218,30 @@ changes since 20260928T101500Z:
   m02-csv-to-json: pass_rate 0.333 -> 1 (+0.667)
   m02-csv-to-json: mean_tokens 5210 -> 3980 (-1230)
 ```
+
+One trial, end to end:
+
+```mermaid
+sequenceDiagram
+  participant CLI as scripts.evals
+  participant RT as run_trial
+  participant WS as temp workspace
+  participant AG as Agent
+  participant GR as grade
+  CLI->>RT: task, model, trial n
+  RT->>WS: write the task's files
+  RT->>AG: Agent(tools from toolsets, tracer)
+  AG->>AG: run(prompt), traced to JSONL
+  AG-->>RT: RunResult
+  loop each check
+    RT->>GR: check, answer, workspace, judge
+    GR-->>RT: CheckResult(passed, detail)
+  end
+  RT-->>CLI: TrialRecord (a crash is a failed record, never an exception)
+  CLI->>CLI: aggregate, print table, save JSON, compare with last run
+```
+
+*The full version, with what later weeks add, is Fig 13 in [docs/architecture.md](../docs/architecture.md#fig-13-one-eval-trial).*
 
 ## 9. Exercises
 

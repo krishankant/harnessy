@@ -98,6 +98,8 @@ uv run python -m scripts.evals --suite capstone --tasks c0 --trials 3      # one
 uv run python -m scripts.evals --suite capstone --provider both --trials 3 # the "done when"
 ```
 
+When we built this, both Claude Opus 5 and GPT-5.5 passed all 15 tasks in one trial (about $0.04 and $0.02 per task). A suite everyone passes can't tell two versions apart, so it has saturated. Once yours passes, make it harder: add a distractor page that contradicts the real one, a bug that spans two files, or a question that needs a join across three tables. Then see which harness changes the harder tasks call for.
+
 Results are saved as `evals/results/<time>-capstone-<provider>.json`, so they're compared with your previous capstone runs, not with week 5's. Read every failure with `scripts.trace_view` before you change anything:
 
 - Did the researcher cite a page it never fetched?

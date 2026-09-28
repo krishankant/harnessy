@@ -4,7 +4,7 @@ harnessy ever sees a provider's own format."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 StopReason = Literal["end_turn", "tool_use", "max_tokens", "refused", "error"]
 
@@ -55,6 +55,21 @@ class ToolSpec:
     name: str
     description: str
     parameters: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Tool:
+    """A tool the agent can run: what the model sees (spec) and the function behind it.
+    timeout_s and max_chars override the registry's defaults for this one tool (week 3)."""
+
+    spec: ToolSpec
+    fn: Callable[..., object]
+    timeout_s: float | None = None
+    max_chars: int | None = None
+
+    @property
+    def name(self) -> str:
+        return self.spec.name
 
 
 @dataclass(frozen=True)

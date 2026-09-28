@@ -8,19 +8,9 @@ from dataclasses import dataclass, field
 from typing import Callable, Literal
 
 from harnessy.models.base import Model
-from harnessy.types import Message, ModelResponse, ToolCall, ToolResult, ToolSpec, Usage
+from harnessy.types import Message, ModelResponse, Tool, ToolCall, ToolResult, ToolSpec, Usage
 
 RunStopReason = Literal["end_turn", "max_steps", "max_tokens", "timeout", "refused", "model_error"]
-
-
-@dataclass(frozen=True)
-class Tool:
-    spec: ToolSpec
-    fn: Callable[..., object]
-
-    @property
-    def name(self) -> str:
-        return self.spec.name
 
 
 @dataclass(frozen=True)

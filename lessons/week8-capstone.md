@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week8` passes (29 tests), and
+1. `uv run pytest tests/week8` passes (32 tests), and
 2. `uv run python -m scripts.evals --suite capstone --provider both --trials 3` shows each agent passing at least 3 of its 5 tasks on each provider, and
 3. the write-up in `NOTES.md` (section 10) is finished.
 
@@ -25,9 +25,9 @@ Each is *configuration only*: a system prompt, tools, hooks and limits, passed t
 | | Research | Code | Data |
 | --- | --- | --- | --- |
 | Tools | `web_search`, `http_get`, `remember`, `recall`, `spawn_subagent` | `read_file`, `write_file`, `edit_file`, `run_tests` | `list_tables`, `run_sql`, `plot_query` |
-| Hooks | an `ApprovalHook` (it's the lethal trifecta) | a `StopCheck` that runs the tests | none |
+| Hooks | an `ApprovalHook` (it's the lethal trifecta) | an `ApprovalHook` on `run_tests`, and a `StopCheck` that runs the tests | none |
 | Limits | 15 steps, `ContextManager(20,000)` | 20 steps | 12 steps |
-| Tasks check | the answer is right **and** every cited page exists and supports it | the repo's tests pass, and the test file is unchanged | the number or name matches a known answer |
+| Tasks check | the answer is right **and** every cited page exists and supports it | the repo's tests pass **and** a hidden check runs the code directly | the number or name matches a known answer |
 
 The 15 tasks live in `evals/capstone/{research,code,data}/`. Each YAML names its agent (`agent: research`), and the runner builds that agent for the trial.
 
@@ -66,9 +66,9 @@ In a real deployment, the same config with a real search tool would need a real 
 ## 5. The code agent
 
 - **`edit_file(path, old, new)`** replaces text that must appear **exactly once** (your exercise, `edit_text`). An edit that could match two places is refused with "include more context", so the model can't change the wrong line without noticing.
-- **`run_tests`** runs pytest through week 7's sandbox: a subprocess, a scrubbed environment and a real timeout.
+- **`run_tests`** runs pytest through week 7's sandbox: a subprocess, a scrubbed environment and a real timeout. It's tagged with all three trifecta legs, like `run_shell`, because running tests runs code the model may just have written. So the code agent needs a guard too: `ApprovalHook({"run_tests": "ask"}, approver=trust_workspace_tests)`. That approver says yes on purpose, and its docstring says why: the eval repo is a throwaway, and the run is sandboxed. In production you'd run tests in a container with no network, or ask a person.
 - **A `StopCheck` runs the tests** whenever the model says it's done, and sends it back with the failures if they don't pass. That's week 6's stretch, now doing real work. The agent literally can't finish with red tests. `test_code_agent_is_sent_back_while_the_tests_fail` shows it.
-- **The task checks catch cheating.** Each code task also checks that the test file still contains its key assertion, so "fixing" the tests by deleting them fails.
+- **The task checks don't trust the tests.** A model can make pytest pass without fixing anything: `pytestmark = pytest.mark.skip` at the top of the test file, or a `conftest.py` that skips everything. So each code task also has a **hidden** check: `python -c "from stats import mean; assert mean([2, 4, 6]) == 4 ..."` runs the code directly, and the agent never sees it. The final review found the skip trick, and we checked that each hidden check fails the cheat and passes the real fix.
 
 ## 6. The data agent
 

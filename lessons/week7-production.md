@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week7` passes (42 tests), and weeks 1–6 still pass after the wiring (section 9), and
+1. `uv run pytest tests/week7` passes (44 tests), and weeks 1–6 still pass after the wiring (section 9), and
 2. `uv run python -m scripts.week7_demo` does four things: streams its first answer, survives a simulated 429, stops at a cost limit, and refuses to send the email a web page asked for.
 
 ## 1. Read first
@@ -80,7 +80,7 @@ The copy keeps everything else: your hooks, tracer, context manager and cost lim
 | `claude-fable-5-1` | $10 | $50 |
 | `gpt-5.5` | $5 | $30 |
 
-- `price_for` finds dated ids too: `gpt-5.5-2026-04-23` uses the `gpt-5.5` price.
+- `price_for` finds dated ids too: `gpt-5.5-2026-04-23` uses the `gpt-5.5` price. **Only a date counts.** `gpt-5.5-pro` is a different, dearer model, so it gets no price rather than a wrong one, and a cost limit on it is an error until you add its price.
 - `Agent(max_cost_usd=0.50)` is the fourth limit. Like the others, it's checked **before** each model call, so a run can overshoot by one call. The demo's $0.002 limit stopped at $0.0054 after one call.
 - A cost limit for a model with no price is an **error when the agent is created**. You can't enforce a limit you can't measure.
 - `RunResult.cost_usd` is filled in either way, and the week 5 eval table now has a cost column.

@@ -15,6 +15,9 @@ def test_price_for_exact_and_dated_names():
     assert price_for("gpt-5.5-2026-04-23", prices) == Price(5, 30)
     assert price_for("claude-opus-5-20260915", prices) == Price(5, 25)
     assert price_for("gpt-5.55", prices) is None
+    assert price_for("gpt-5.5-pro", prices) is None  # a different model, not a dated id
+    assert price_for("gpt-5.5-mini", prices) is None
+    assert price_for("claude-opus-5-1", prices) is None
     assert price_for("llama3", prices) is None
 
 

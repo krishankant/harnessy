@@ -22,6 +22,9 @@ files:
     def test_spaces_and_numbers():
         assert slugify("  Agent  Harness 101 ") == "agent-harness-101"
 checks:
+  # A hidden behaviour check: it runs the code directly, so editing or skipping the tests can't pass it.
+  - type: command_succeeds
+    command: "python -c \"from slug import slugify; assert slugify('Hello, World!') == 'hello-world' and slugify('A  B 7') == 'a-b-7'\""
   - type: command_succeeds
     command: "python -m pytest -q -p no:cacheprovider"
   - type: file_contains

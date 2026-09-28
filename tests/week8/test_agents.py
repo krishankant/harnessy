@@ -54,6 +54,8 @@ def test_research_agent_passes_the_trifecta_check(corpus, tmp_path):
 def test_code_agent_config(tmp_path):
     agent = code.make_agent(ScriptedModel([]), tmp_path)
     assert names(agent) == ["read_file", "write_file", "edit_file", "run_tests"]
+    [guard] = [h for h in agent.hooks if isinstance(h, ApprovalHook)]
+    assert guard.policy.get("run_tests") == "ask" and guard.approver(ToolCall("c", "run_tests", {}))
     assert any(isinstance(h, StopCheck) for h in agent.hooks) and agent.max_steps == 20
 
 
@@ -112,3 +114,6 @@ def test_data_agent_runs_end_to_end():
 def test_the_capstone_tasks_all_load():
     tasks = load_tasks(ROOT / "evals" / "capstone")
     assert len(tasks) == 15 and Counter(t.agent for t in tasks) == {"research": 5, "code": 5, "data": 5}
+    for t in tasks:
+        if t.agent == "code":  # a hidden behaviour check the agent can't satisfy by editing the tests
+            assert sum(c["type"] == "command_succeeds" for c in t.checks) >= 2, t.id

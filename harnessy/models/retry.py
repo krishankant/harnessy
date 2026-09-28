@@ -77,7 +77,10 @@ class RetryingModel:
         """Retry a stream only if it fails before the first chunk: text already shown can't be taken back."""
         inner = getattr(self.model, "stream", None)
         if inner is None:
-            yield self.complete(messages, tools, system)
+            response = self.complete(messages, tools, system)
+            if response.message.text:
+                yield response.message.text  # a model that can't stream still sends its text
+            yield response
             return
         for attempt in range(self.max_attempts):
             started = False

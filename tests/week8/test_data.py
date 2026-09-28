@@ -62,3 +62,10 @@ def test_attach_and_vacuum_into_cannot_write_files(db, tmp_path):
             query_readonly(db, sql)
     assert not (tmp_path / "evil.db").exists() and not (tmp_path / "copy.db").exists()
     assert "1" in query_readonly(db, "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2) SELECT * FROM n")
+
+
+def test_charts_must_be_svg_files(db, tmp_path):
+    reg = ToolRegistry(data_tools(db, tmp_path))
+    r = reg.call(ToolCall("c1", "plot_query", {"sql": "SELECT name, id FROM customers", "out": "data.db"}))
+    assert r.is_error and ".svg" in r.content
+    assert "Ana" in query_readonly(db, "SELECT name FROM customers WHERE id = 1")

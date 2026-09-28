@@ -56,15 +56,16 @@ def judge_verdict(judge: Model, criteria: str, answer: str) -> CheckResult:
 def check_citations(answer: str, facts: list[str], web: LocalWeb) -> CheckResult:
     """Week 8: pass only if the answer's citations are real and support every fact.
 
-    - URLs: re.findall(r"https?://\\S+", answer), each with trailing .,;:!?)]"'> stripped
-      (Markdown links and <...> wrappers). None -> CheckResult(False, "the answer cites no URLs").
+    - URLs: re.findall(r"https?://[^\\s()<>\\[\\]\"'`*\u2013\u2014]+", answer) (stops at spaces,
+      brackets, quotes, backticks, * and dashes, so Markdown links, `code` and **bold** work), each
+      with trailing .,;:!? stripped. None -> CheckResult(False, "the answer cites no URLs").
     - Every URL must be a page of web (web.slug_for(url) in web.pages), else
       CheckResult(False, "<url> is not a page on the local web").
     - Every fact must appear (case-insensitive) in the title or text of at least one cited page,
       else CheckResult(False, "no cited page supports: <missing facts joined '; '>").
     - Otherwise CheckResult(True, "<n> citation(s), all supported").
     """
-    urls = [u.rstrip(".,;:!?)]\"'>") for u in re.findall(r"https?://\S+", answer)]
+    urls = [u.rstrip(".,;:!?") for u in re.findall(r"https?://[^\s()<>\[\]\"'`*\u2013\u2014]+", answer)]
     if not urls:
         return CheckResult(False, "the answer cites no URLs")
     pages = []

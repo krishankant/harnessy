@@ -50,7 +50,8 @@ def code_tools(root: str | Path, test_timeout_s: float = 120.0) -> list[Tool]:
         target.write_text(edit_text(target.read_text(), old, new))
         return f"Edited {path}"
 
-    @tool(timeout_s=test_timeout_s + 10)
+    # Running tests runs code the model may have written: a shell by another name (week 7).
+    @tool(timeout_s=test_timeout_s + 10, tags={"private_data", "untrusted_input", "external_send"})
     def run_tests(args: str = "") -> str:
         """Run the project's tests with pytest and return the exit code and the end of the output.
 

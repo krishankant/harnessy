@@ -118,6 +118,8 @@ def data_tools(db_path: str | Path, root: str | Path) -> list[Tool]:
             sql: A read-only query returning exactly two columns: label, number.
             out: File name for the chart, for example "chart.svg".
         """
+        if not out.lower().endswith(".svg"):
+            raise ValueError(f"out must be an .svg file name, for example chart.svg (got {out!r})")
         conn = connect_readonly(db_path)
         try:
             rows = conn.execute(sql).fetchmany(50)

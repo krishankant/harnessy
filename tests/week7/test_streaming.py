@@ -129,3 +129,17 @@ def test_stream_agent_reraises_errors_from_the_run():
     list(stream_agent(Agent(ScriptedModel([text_reply("fine")])), "x"))  # fails plainly while a stub
     with pytest.raises(ValueError, match="hook bug"):
         list(stream_agent(Agent(model, tools=[add], hooks=[Broken()]), "x"))
+
+
+def test_streaming_a_retrying_model_over_a_plain_model_still_sends_text():
+    from harnessy.models.retry import RetryingModel
+
+    class Plain:
+        name = "plain"
+
+        def complete(self, messages, tools, system=None):
+            return text_reply("all at once")
+
+    texts = []
+    StreamingModel(RetryingModel(Plain(), sleep=lambda s: None), texts.append).complete([], [])
+    assert texts == ["all at once"]

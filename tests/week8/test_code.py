@@ -35,3 +35,9 @@ def test_edit_and_run_tests(repo):
 def test_edit_mistakes_are_error_results(repo):
     r = ToolRegistry(code_tools(repo)).call(ToolCall("c1", "edit_file", {"path": "calc.py", "old": "nope", "new": "x"}))
     assert r.is_error and "not found" in r.content
+
+
+def test_run_tests_is_tagged_like_a_shell(repo):
+    run_tests = code_tools(repo)[3]
+    assert run_tests.name == "run_tests"
+    assert run_tests.tags == frozenset({"private_data", "untrusted_input", "external_send"})

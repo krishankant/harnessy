@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from harnessy.types import Usage
@@ -32,8 +33,10 @@ PRICES: dict[str, Price] = {
 
 
 def price_for(model_name: str, prices: dict[str, Price]) -> Price | None:
-    """The price for model_name: an exact key; else the longest key k where model_name starts
-    with k + "-" (dated ids like "gpt-5.5-2026-04-23"); else None."""
+    """The price for model_name: an exact key; else a key k where model_name is k followed by a
+    date, "-YYYYMMDD" or "-YYYY-MM-DD" (dated ids like "gpt-5.5-2026-04-23"); else None.
+    Only a date counts: "gpt-5.5-pro" is a different, dearer model, not gpt-5.5, and pricing it
+    as gpt-5.5 would make a cost limit meaningless."""
     raise NotImplementedError("Week 7 exercise: price_for")
 
 

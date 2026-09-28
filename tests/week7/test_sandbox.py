@@ -51,3 +51,11 @@ def test_shell_tool_is_given(tmp_path):
     slow = reg.call(ToolCall("c2", "run_shell", {"command": "sleep 5"})).content
     assert slow.startswith("timed out after 0.5s; the process was killed")
     assert reg.tools[0].tags == frozenset({"private_data", "untrusted_input", "external_send"})
+
+
+def test_a_flood_of_output_is_stopped(tmp_path):
+    run_command("echo ok", tmp_path)  # fails plainly while a stub
+    start = time.monotonic()
+    r = run_command([sys.executable, "-c", "while True: print('y' * 1000)"], tmp_path, timeout_s=30, max_output=100, max_bytes=200_000)
+    assert r.exit_code is None and not r.timed_out and time.monotonic() - start < 10
+    assert r.output.startswith("y" * 100) and "output limit of 200,000 bytes reached; the process was killed" in r.output

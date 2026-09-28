@@ -71,3 +71,10 @@ def test_tasks_take_an_agent_and_load_from_subfolders(tmp_path):
     (tmp_path / "bad.yaml").write_text(textwrap.dedent(TASK.format(agent="robot")))
     with pytest.raises(TaskError, match="bad.yaml: unknown agent: robot"):
         load_task(tmp_path / "bad.yaml")
+
+
+def test_common_url_formats_are_understood(web):
+    url = web.url("railway")
+    check_citations(f"({url})", ["Ada Voss"], web)  # fails plainly while a stub
+    for answer in (f"[{url}]({url})", f"`{url}`", f"**{url}**", f"{url}—see there"):
+        assert check_citations(answer, ["Ada Voss"], web).passed, answer

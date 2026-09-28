@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,18 +36,24 @@ def run_command(
     timeout_s: float = 30.0,
     max_output: int = 10_000,
     env: dict[str, str] | None = None,
+    max_bytes: int = 10_000_000,
 ) -> CommandResult:
     """Run command in workdir and return what happened. Never raises for a failing command.
 
     - A list runs directly; a str runs through /bin/sh (shell=isinstance(command, str)).
     - Environment: ONLY the SAFE_ENV_KEYS that exist in os.environ, plus HOME=str(workdir),
       plus env. Your API keys must not reach the command.
-    - stdout and stderr merged (stderr=subprocess.STDOUT), text mode (errors="replace"),
-      stdin=subprocess.DEVNULL, start_new_session=True (the command gets its own process group).
-    - proc.communicate(timeout=timeout_s). On subprocess.TimeoutExpired: os.killpg(proc.pid,
-      signal.SIGKILL) kills the whole group (children too), then communicate() again to collect
-      what was printed, and return exit_code None, timed_out True.
-    - Output goes through truncate(output, max_output) (week 3).
+    - Output (stdout and stderr together, stderr=subprocess.STDOUT) goes to a
+      tempfile.TemporaryFile, not a pipe: a pipe holds everything in memory, and a descendant
+      that keeps it open would make you wait forever. stdin=subprocess.DEVNULL,
+      start_new_session=True (the command gets its own process group).
+    - Poll every 0.02 s (proc.poll()). Kill the whole group (os.killpg(proc.pid, signal.SIGKILL);
+      ignore ProcessLookupError) and proc.wait() if the time is up (timed_out=True) or the file
+      has grown past max_bytes (os.fstat(file.fileno()).st_size). A command stopped either way
+      has exit_code None.
+    - Read the file back, decode UTF-8 with errors="replace", truncate(output, max_output)
+      (week 3), and if it was stopped for size append
+      "\n[output limit of {max_bytes:,} bytes reached; the process was killed]".
     """
     raise NotImplementedError("Week 7 exercise: run_command")
 

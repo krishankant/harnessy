@@ -12,6 +12,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
+from harnessy.hooks import Hook
+
 # --- Given -----------------------------------------------------------------------------
 
 
@@ -82,3 +84,37 @@ def format_timeline(events: list[dict[str, Any]]) -> str:
     other kinds -> "[{t:7.2f}s] {kind} {_short(json.dumps(the other keys))}"
     """
     raise NotImplementedError("Week 5 exercise: format_timeline")
+
+
+# --- Given (week 6) --------------------------------------------------------------------
+
+
+class TraceHook(Hook):
+    """Week 6: the week 5 events, emitted from hook points instead of from inside the loop."""
+
+    def __init__(self, tracer: Tracer):
+        self.tracer = tracer
+        self._calls = 0
+
+    def on_start(self, agent: Any, task: str) -> None:
+        self._calls = 0
+        self.tracer.event("run_start", task=task, model=agent.model.name, system=agent.system, tools=[t.name for t in agent.tools])
+
+    def after_model(self, response: Any) -> None:
+        self.tracer.event(
+            "model_call", step=self._calls, stop_reason=response.stop_reason, input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens, text=response.message.text, tool_calls=response.message.tool_calls,
+        )
+        self._calls += 1
+
+    def after_tool(self, call: Any, result: Any) -> None:
+        self.tracer.event(
+            "tool_result", step=self._calls - 1, name=call.name, arguments=call.arguments,
+            tool_call_id=result.tool_call_id, content=result.content, is_error=result.is_error,
+        )
+
+    def on_finish(self, result: Any) -> None:
+        self.tracer.event(
+            "stop", stop_reason=result.stop_reason, steps=len(result.steps), input_tokens=result.usage.input_tokens,
+            output_tokens=result.usage.output_tokens, error=result.error, final_text=result.final_text,
+        )

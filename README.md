@@ -4,6 +4,8 @@ A small agent harness you build yourself, one week at a time. It works with any 
 
 The repo covers all eight weeks: **1** a provider-neutral model interface, **2** the agent loop, **3** tools, **4** context and memory, **5** traces and evals, **6** hooks, approvals, subagents and planning, **7** production concerns (retries, streaming, cost limits, a sandbox, the lethal-trifecta check) and **8** the capstone (three agents on one harness).
 
+**Start here:** [`LEARNING_PLAN.md`](LEARNING_PLAN.md) is the 8-week plan: what each week is about, what to read, what to build, and how you know you're done. Each week then has a hands-on lesson in [`lessons/`](lessons/).
+
 For diagrams of how it all fits together (architecture, sequence, state and class diagrams), see [`docs/architecture.md`](docs/architecture.md).
 
 ## Setup

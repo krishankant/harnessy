@@ -38,6 +38,8 @@ def validate_args(schema: dict[str, Any], args: dict[str, Any]) -> list[str]:
     - args == {"_raw": ...} (week 1's marker for invalid JSON) -> return just
       ["the arguments were not valid JSON: <raw!r>. Send a JSON object."]
     - each name in schema["required"] is present: "missing required parameter 'n'"
+    - None for a name that is NOT required counts as "not given": no problem (models often
+      send null for optional parameters)
     - a name not in schema["properties"] is a problem ONLY if schema["additionalProperties"]
       is False (JSON Schema allows extra names by default): "unknown parameter 'zz'"
     - each known value matches its "type" (use _TYPES): "'n' must be integer, got str '3'".
@@ -49,8 +51,11 @@ def validate_args(schema: dict[str, Any], args: dict[str, Any]) -> list[str]:
     properties = schema.get("properties", {})
     if set(args) == {"_raw"} and "_raw" not in properties:
         return [f"the arguments were not valid JSON: {args['_raw']!r}. Send a JSON object."]
+    required = set(schema.get("required", []))
     problems = [f"missing required parameter '{name}'" for name in schema.get("required", []) if name not in args]
     for name, value in args.items():
+        if value is None and name not in required:
+            continue
         prop = properties.get(name)
         if prop is None:
             if schema.get("additionalProperties") is False:
@@ -106,7 +111,9 @@ class ToolRegistry:
         1. Unknown name -> error: "Unknown tool 'x'. Available tools: a, b."
         2. validate_args problems -> error:
            "Invalid arguments for 'add': <problems joined by '; '>. Expected parameters: <self.expected(tool)>."
-        3. Run tool.fn(**call.arguments) in a threading.Thread(daemon=True) and join it for
+        2b. Drop arguments whose value is None and whose name isn't required, so the
+            function's own default applies.
+        3. Run tool.fn(**arguments) in a threading.Thread(daemon=True) and join it for
            at most the tool's timeout_s (or self.default_timeout_s if None). Still alive ->
            error "Tool 'x' timed out after 0.05s. ..." (format the number with :g). Python
            can't kill a thread, so it keeps running in the background; daemon=True means it
@@ -129,12 +136,14 @@ class ToolRegistry:
                 f"Invalid arguments for '{call.name}': {'; '.join(problems)}. Expected parameters: {self.expected(tool)}.",
                 is_error=True,
             )
+        required = set(tool.spec.parameters.get("required", []))
+        arguments = {k: v for k, v in call.arguments.items() if not (v is None and k not in required)}
         timeout = tool.timeout_s if tool.timeout_s is not None else self.default_timeout_s
         outcome: dict[str, Any] = {}
 
         def target() -> None:
             try:
-                outcome["output"] = tool.fn(**call.arguments)
+                outcome["output"] = tool.fn(**arguments)
             except Exception as e:
                 outcome["error"] = e
 

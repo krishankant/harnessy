@@ -160,3 +160,23 @@ def test_a_hung_tool_does_not_keep_the_process_alive(tmp_path):
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60, env=env, cwd=tmp_path)
     assert "timed out" in out.stdout, out.stderr
     assert time.monotonic() - start < 10
+
+
+def test_null_for_an_optional_parameter_is_accepted():
+    schema = {
+        "type": "object",
+        "properties": {"q": {"type": "string"}, "n": {"type": "integer"}},
+        "required": ["q"],
+        "additionalProperties": False,
+    }
+    assert validate_args(schema, {"q": "x", "n": None}) == []
+    assert validate_args(schema, {"q": None}) == ["'q' must be string, got NoneType None"]
+
+
+def test_null_optional_arguments_are_dropped_so_defaults_apply():
+    @tool
+    def page(q: str, n: int = 5) -> str:
+        """Show a page of results."""
+        return f"{q}:{n}"
+
+    assert call(ToolRegistry([page]), "page", q="x", n=None).content == "x:5"

@@ -6,6 +6,7 @@ dependencies = [
     "anthropic>=1.8.0",
     "openai>=3.19.2",
     "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]

@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week3` passes (50 tests), and `tests/week2` still passes after you wire the registry in (section 9), and
+1. `uv run pytest tests/week3` passes (52 tests), and `tests/week2` still passes after you wire the registry in (section 9), and
 2. `uv run python -m scripts.week3_demo` writes and reads back a haiku on both providers.
 
 ## 1. Read first
@@ -70,6 +70,7 @@ It checks only what the schema says, using JSON Schema's own rules:
 | An `int` *is* a valid `number` | `3` is fine where `3.0` is expected. |
 | `enum` | For `Literal["asc", "desc"]` parameters. |
 | Items of an `array` | One level deep is enough. |
+| `null` for an optional parameter counts as "not given" | Models often send `"text": null` for a parameter they mean to skip. Accept it, then drop it before the call so the function's default applies. |
 | `{"_raw": ...}` | Week 1's marker for arguments that weren't valid JSON. Say that, rather than "unknown parameter `_raw`". |
 
 ## 5. Errors are instructions

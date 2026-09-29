@@ -65,7 +65,7 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/safety.py` | 7 | **Exercise:** `check_trifecta` |
 | `harnessy/tools/outbox.py` | 7 | Given: a fake `send_email` that writes to a file |
 | `scripts/week7_demo.py` | 7 | Given: streaming, a retried 429, a cost limit, a blocked prompt injection |
-| `harnessy/mcp.py` | 9 | **Exercise:** `McpClient.request`, `connect`, `list_tools`, `content_to_text`, `mcp_tools` (the stdio transport is given) |
+| `harnessy/mcp.py` | 9 | **Exercise:** `McpClient.request`, `connect` and `_initialize_legacy`, `list_tools`, `content_to_text`, `mcp_tools` (the stdio transport and `clean_schema` are given) |
 | `scripts/mcp_notes_server.py` | 9 | Given: an example MCP server (notes), speaking both MCP eras |
 | `scripts/week9_demo.py` | 9 | Given: an agent using MCP tools; `--server` connects to any stdio MCP server |
 | `harnessy/tools/localweb.py` | 8 | **Exercise:** `LocalWeb.search` (serving and `web_search` are given) |

@@ -1,6 +1,6 @@
 # harnessy architecture
 
-Diagrams of the harness as built on `master`, drawn from the eight lessons in `lessons/` and the reference code in `solutions/harnessy/`. Each figure names the files and lesson sections it comes from. The same figures are published as a page: [harnessy Blueprints](https://claude.ai/artifact/SFopAuFpMFRJfYdFePJi5B) (private to the owner unless shared).
+Diagrams of the harness as built on `main`, drawn from the lessons in `lessons/` (weeks 1–8 plus the bonus week 9) and the reference code in `solutions/harnessy/`. Each figure names the files and lesson sections it comes from. Figures 1–14 are also published as a page: [harnessy Blueprints](https://claude.ai/artifact/SFopAuFpMFRJfYdFePJi5B) (private to the owner unless shared).
 
 **Figures**
 
@@ -65,8 +65,9 @@ flowchart TB
     D["list_tables · run_sql · plot_query"]
     SUB["spawn_subagent"]
     OUT["send_email · outbox"]
-    MCPT["MCP server tools · week 9"]
   end
+
+  MCPT["MCP server tools · week 9<br/>mcp_tools: plain Tools, not @tool"]
 
   subgraph MODELS["Models"]
     RETRY["RetryingModel · week 7"]
@@ -85,6 +86,7 @@ flowchart TB
   HOOKS --> HOOKLIST
   REG --> TOOLS
   SUB -. "new child Agent" .-> RUN
+  REG --> MCPT
   MCPT -. "McpClient over stdio" .-> MCPS[("MCP server")]
   RUN -- "complete(view, specs, system)" --> RETRY
   RETRY --> ANT
@@ -602,4 +604,4 @@ Every MCP tool carries all three lethal-trifecta tags unless you pass `tags=`, s
 
 ---
 
-Drawn from the harnessy repository on master (6a941cd), 28 September 2026. The figures follow the reference solutions; your own `loop.py` should match them once each week is wired in.
+Drawn from the harnessy repository on `main`, 28 September 2026. The figures follow the reference solutions; your own `loop.py` should match them once each week is wired in.

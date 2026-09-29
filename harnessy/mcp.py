@@ -61,11 +61,15 @@ class StdioTransport:
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=full_env, cwd=cwd
         )
         self._pending: dict[Any, queue.Queue] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.Lock()  # guards _pending and _closed; never held during I/O
         self._closed = False
+        self._broken = False
+        self._outbox: queue.Queue = queue.Queue()
         self.notifications: list[dict[str, Any]] = []
         self._reader = threading.Thread(target=self._read, daemon=True)
         self._reader.start()
+        self._writer = threading.Thread(target=self._write, daemon=True)
+        self._writer.start()
 
     def expect(self, request_id: Any) -> queue.Queue:
         """Register interest in the response to request_id (before sending the request)."""
@@ -82,41 +86,63 @@ class StdioTransport:
             self._pending.pop(request_id, None)
 
     def send(self, message: dict[str, Any]) -> None:
-        line = json.dumps(message, separators=(",", ":")) + "\n"  # json.dumps never emits a raw newline
-        try:
-            with self._lock:
-                self.proc.stdin.write(line.encode())
-                self.proc.stdin.flush()
-        except (BrokenPipeError, ValueError, OSError) as e:
-            raise ConnectionError("the MCP server is not running") from e
+        """Queue one message for the writer thread. Never blocks: a server that stops reading
+        can't freeze the caller (the request's own timeout still applies)."""
+        if self._broken or self.proc.poll() is not None:
+            raise ConnectionError("the MCP server is not running")
+        self._outbox.put((json.dumps(message, separators=(",", ":")) + "\n").encode())  # never a raw newline inside
 
-    def _read(self) -> None:
-        for raw in self.proc.stdout:
+    def _write(self) -> None:
+        """The only thread that touches the server's stdin."""
+        while True:
+            data = self._outbox.get()
+            if data is None:
+                break
             try:
-                message = json.loads(raw)
-            except json.JSONDecodeError:
-                continue  # not a message; the spec forbids it, so skip it
-            if isinstance(message, dict) and "id" in message and ("result" in message or "error" in message):
-                with self._lock:
-                    box = self._pending.pop(message["id"], None)
-                if box is not None:
-                    box.put(message)
-            else:
-                self.notifications = (self.notifications + [message])[-100:]
-        with self._lock:  # the server closed stdout: wake everyone still waiting
-            self._closed = True
-            boxes, self._pending = list(self._pending.values()), {}
-        for box in boxes:
-            box.put(None)
-        self.proc.stdout.close()
-
-    def close(self, timeout_s: float = 2.0) -> None:
-        """Close stdin, wait; then terminate, wait; then kill (the spec's shutdown order).
-        Finally wait for the reader thread, which closes stdout, so no pipe is left open."""
+                self.proc.stdin.write(data)
+                self.proc.stdin.flush()
+            except (BrokenPipeError, ValueError, OSError):
+                self._broken = True
+                break
         try:
             self.proc.stdin.close()
-        except OSError:
+        except (BrokenPipeError, ValueError, OSError):
             pass
+
+    def _read(self) -> None:
+        """Route responses to waiting requests. A bad line is skipped, never fatal."""
+        try:
+            for raw in self.proc.stdout:
+                try:
+                    message = json.loads(raw)
+                except (ValueError, RecursionError):  # not JSON, not UTF-8, or absurdly deep
+                    continue
+                request_id = message.get("id") if isinstance(message, dict) else None
+                routable = isinstance(request_id, (str, int)) and not isinstance(request_id, bool)
+                if routable and ("result" in message or "error" in message):
+                    with self._lock:
+                        box = self._pending.pop(request_id, None)
+                    if box is not None:
+                        box.put(message)
+                else:
+                    self.notifications = (self.notifications + [message])[-100:]
+        finally:  # the server closed stdout (or the loop failed): wake everyone still waiting
+            with self._lock:
+                self._closed = True
+                boxes, self._pending = list(self._pending.values()), {}
+            for box in boxes:
+                box.put(None)
+            try:
+                self.proc.stdout.close()
+            except OSError:
+                pass
+
+    def close(self, timeout_s: float = 2.0) -> None:
+        """Close stdin (via the writer), wait; then terminate, wait; then kill: the spec's
+        shutdown order. A write stuck on a server that stopped reading fails once the server
+        is gone. Finally wait for both threads, so no pipe is left open."""
+        self._outbox.put(None)
+        self._writer.join(timeout=0.5)
         for step in (lambda: None, self.proc.terminate, self.proc.kill):
             if self.proc.poll() is not None:
                 break
@@ -126,6 +152,7 @@ class StdioTransport:
                 break
             except subprocess.TimeoutExpired:
                 continue
+        self._writer.join(timeout=timeout_s)
         self._reader.join(timeout=timeout_s)
 
 
@@ -133,7 +160,7 @@ class StdioTransport:
 
 
 class McpClient:
-    def __init__(self, transport: StdioTransport, timeout_s: float = 30.0, probe_timeout_s: float = 3.0):
+    def __init__(self, transport: StdioTransport, timeout_s: float = 30.0, probe_timeout_s: float = 10.0):
         self.transport = transport
         self.timeout_s = timeout_s
         self.probe_timeout_s = probe_timeout_s
@@ -166,7 +193,11 @@ class McpClient:
     def _roundtrip(self, message: dict[str, Any], timeout: float) -> dict[str, Any]:
         """Send one request and wait for its response (the raw JSON-RPC message)."""
         box = self.transport.expect(message["id"])
-        self.transport.send(message)
+        try:
+            self.transport.send(message)
+        except ConnectionError:
+            self.transport.forget(message["id"])
+            raise
         try:
             response = box.get(timeout=timeout)
         except queue.Empty:
@@ -262,6 +293,31 @@ def tool_name(name: str, prefix: str | None = None) -> str:
     return clean[:64]
 
 
+def _clean_property(schema: Any) -> dict[str, Any]:
+    if not isinstance(schema, dict):
+        return {}  # e.g. `true` ("anything goes") or `false`
+    out = dict(schema)
+    if "type" in out and not isinstance(out["type"], str):
+        out.pop("type")  # e.g. ["string", "null"]: the week 3 validator checks one type only
+    if "items" in out:
+        out["items"] = _clean_property(out["items"])
+    return out
+
+
+def clean_schema(input_schema: Any) -> dict[str, Any]:
+    """An MCP inputSchema reduced to what the week 3 validator can check, so it never crashes
+    on a real server's schema: an object with "properties" (each cleaned: a list of types or a
+    boolean subschema is dropped, meaning "not checked") and "required" only if it's a list.
+    Anything else (enum, descriptions, additionalProperties...) is kept as is."""
+    schema = dict(input_schema) if isinstance(input_schema, dict) else {}
+    schema["type"] = "object"
+    properties = schema.get("properties")
+    schema["properties"] = {k: _clean_property(v) for k, v in properties.items()} if isinstance(properties, dict) else {}
+    if not isinstance(schema.get("required", []), list):
+        schema.pop("required")
+    return schema
+
+
 def _caller(client: McpClient, name: str) -> Callable[..., str]:
     def call(**arguments: Any) -> str:
         result = client.call_tool(name, arguments)
@@ -283,8 +339,11 @@ def mcp_tools(
 
     - name: tool_name(mcp["name"], prefix)
     - description: mcp["description"], else mcp["title"], else mcp["name"]
-    - parameters: a copy of mcp["inputSchema"] (default {}) with "type" defaulting to "object"
-      and "properties" to {} (the registry validates against it, like any other tool)
+    - parameters: clean_schema(mcp.get("inputSchema")) (given: real servers send schemas the
+      week 3 validator can't check, like "type": ["string", "null"]; cleaning keeps it from
+      crashing on them)
+    - two MCP tools whose cleaned names are the same (e.g. "a.b" and "a_b") -> raise McpError
+      naming both and the clash: providers reject duplicate tool names
     - fn: _caller(client, mcp["name"]) (given: calls the tool, joins the content, and raises
       McpToolError when the result has isError, so the model gets an error result)
     - timeout_s as given, max_chars None, tags=frozenset(tags). The default is all three

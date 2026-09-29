@@ -9,11 +9,15 @@ silent-legacy  legacy, but never answers server/discover
 future         modern, but only supports 2027-01-01 (answers -32022)
 endless        modern, and tools/list pages never end
 crash          modern, and exits on the first tools/call
+garbage        modern, but first writes lines a client must survive (bad bytes, deep JSON, odd ids)
+deaf           modern, but stops reading stdin after server/discover
+slowstart      modern, but takes 3.5 s to start
 """
 
 import json
 import os
 import sys
+import time
 
 MODE = sys.argv[1]
 MODERN = "2026-07-28"
@@ -31,10 +35,22 @@ TOOLS = [
     {"name": "sleep", "description": "Never answers."},
     {"name": "ask", "description": "Needs user input.", "inputSchema": {"type": "object", "properties": {}}},
     {"name": "env", "description": "Lists the environment variable names it can see.", "inputSchema": {"type": "object"}},
+    {
+        "name": "maybe",
+        "description": "Has the awkward schemas real servers send.",
+        "inputSchema": {"type": "object", "properties": {"note": {"type": ["string", "null"]}, "anything": True, "tags": {"type": "array", "items": {"type": ["string", "number"]}}}},
+    },
 ]
+if MODE == "slowstart":
+    time.sleep(3.5)
 answers_initialize = MODE in ("legacy", "silent-legacy", "dual")
 answers_discover = MODE not in ("legacy", "silent-legacy")
 initialized = False
+
+
+def raw(data):
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
 
 
 def send(message):
@@ -77,6 +93,8 @@ def call_tool(mid, params, version):
             "resultType": "input_required",
             "inputRequests": {"q": {"method": "elicitation/create", "params": {"mode": "form", "message": "Name?"}}},
         }})
+    if name == "maybe":
+        return reply(mid, {"content": [{"type": "text", "text": f"note={args.get('note')!r}"}]})
     if name == "env":
         return reply(mid, {"content": [{"type": "text", "text": ",".join(sorted(os.environ))}]})
     return error(mid, -32602, f"Unknown tool: {name}")
@@ -91,6 +109,11 @@ for line in sys.stdin:
             initialized = True
         continue
     if method == "server/discover":
+        if MODE == "garbage":
+            raw(b"\xff\xfe not utf-8\n")
+            raw(("[" * 100_000 + "]" * 100_000 + "\n").encode())
+            raw(b'{"jsonrpc": "2.0", "id": [1], "result": {}}\n')
+            raw(b'{"jsonrpc": "2.0", "id": true, "result": {}}\n')
         if MODE == "silent-legacy":
             continue
         if not answers_discover:
@@ -104,6 +127,8 @@ for line in sys.stdin:
                 "_meta": {"io.modelcontextprotocol/serverInfo": {"name": "fake", "version": "1"}},
                 "instructions": "Fake server.",
             })
+        if MODE == "deaf":
+            time.sleep(60)  # stops reading stdin: the client's big writes will block
         continue
     if method == "initialize":
         if not answers_initialize:

@@ -561,7 +561,7 @@ sequenceDiagram
     S-->>C: error -32022, data.supported = [...]
     Note over C: raise McpError. No fallback: it's a modern server.
   else legacy server
-    S-->>C: any other error, or no answer within 3 s
+    S-->>C: any other error, or no answer within 10 s
     C->>S: initialize (protocolVersion 2025-11-25, capabilities, clientInfo)
     S-->>C: protocolVersion, serverInfo, instructions
     C-)S: notifications/initialized

@@ -13,7 +13,7 @@ from harnessy.tools.registry import ToolRegistry
 from harnessy.types import ToolCall
 
 SERVER = [sys.executable, str(Path(__file__).with_name("fake_server.py"))]
-ALL_NAMES = ["echo", "fail", "files.read", "mixed", "sleep", "ask", "env"]
+ALL_NAMES = ["echo", "fail", "files.read", "mixed", "sleep", "ask", "env", "maybe"]
 
 
 def client(mode: str, **options) -> McpClient:
@@ -167,3 +167,52 @@ def test_close_releases_both_pipes_even_after_a_crash():
                 with pytest.raises(ConnectionError):
                     c.call_tool("echo", {"text": "x"})
         assert c.transport.proc.stdin.closed and c.transport.proc.stdout.closed, mode
+
+
+def test_bad_lines_from_the_server_do_not_kill_the_client():
+    with client("garbage") as c:
+        assert c.era == "modern" and c.transport._reader.is_alive()
+        assert content_to_text(c.call_tool("echo", {"text": "still here"})) == "still here (via 2026-07-28)"
+
+
+def test_a_big_request_to_a_deaf_server_times_out_and_close_still_works():
+    c = client("deaf", timeout_s=0.5)
+    c.connect()
+    start = time.monotonic()
+    with pytest.raises(McpTimeout):
+        c.call_tool("echo", {"text": "x" * 300_000})  # bigger than the pipe buffer
+    with pytest.raises(McpTimeout):
+        c.call_tool("echo", {"text": "small"})  # not stuck behind the big write
+    c.close()
+    assert c.transport.proc.poll() is not None and time.monotonic() - start < 10
+
+
+def test_a_slow_starting_modern_server_is_not_mistaken_for_legacy():
+    with client("slowstart") as c:  # the default probe timeout must cover start-up
+        assert c.era == "modern"
+
+
+def test_awkward_schemas_do_not_crash_the_registry():
+    with client("modern") as c:
+        maybe = next(t for t in mcp_tools(c) if t.name == "maybe")
+        props = maybe.spec.parameters["properties"]
+        assert props["note"] == {} and props["anything"] == {} and props["tags"] == {"type": "array", "items": {}}
+        registry = ToolRegistry([maybe])
+        assert registry.call(ToolCall("c1", "maybe", {"note": None, "anything": 3, "tags": ["a", 1]})).content == "note=None"
+        assert registry.call(ToolCall("c2", "maybe", {"note": "hi"})).content == "note='hi'"
+
+
+class ListingOnly:
+    """Just enough of a client for mcp_tools: it only lists tools."""
+
+    def __init__(self, names):
+        self.names = names
+
+    def list_tools(self):
+        return [{"name": n, "inputSchema": {"type": "object"}} for n in self.names]
+
+
+def test_tool_names_that_collide_after_cleaning_are_an_error():
+    mcp_tools(ListingOnly(["a.b"]))  # fails plainly while mcp_tools is a stub
+    with pytest.raises(McpError, match="a_b"):
+        mcp_tools(ListingOnly(["a.b", "a_b"]))

@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week9` passes (18 tests), and
+1. `uv run pytest tests/week9` passes (23 tests), and
 2. `uv run python -m scripts.week9_demo` connects to the bundled notes server, saves three notes through MCP, and finds one by searching.
 
 ## 1. Read first
@@ -30,7 +30,12 @@ Your harness already speaks "name + description + JSON Schema". This week you te
 - **stdio.** The client starts the server as a subprocess. Each message is one line of JSON on the server's stdin or stdout, with no newlines inside a message. The server's stderr is for its logs.
 - **Shutdown.** Close the server's stdin, wait, then terminate, then kill.
 
-`StdioTransport` (given) does all of that. It starts the process, and a reader thread matches each response to the request that's waiting for it by `id`. That lets several tools run at once, since the week 3 registry runs every tool call in its own thread.
+`StdioTransport` (given) does all of that, with two threads:
+
+- **A writer thread** is the only thing that writes to the server. A server that stops reading can't freeze your agent: a large request just sits in the queue, and the request's own timeout still applies.
+- **A reader thread** matches each response to the request waiting for it by `id`. It skips lines that aren't valid JSON, or aren't even UTF-8, rather than dying on them.
+
+Your loop runs a turn's tool calls one after another, but calls can still overlap: a tool the registry gave up on keeps running, and subagents run their own tools. That's why every response is matched by `id`, never by order.
 
 ## 4. Two eras
 
@@ -56,7 +61,7 @@ sequenceDiagram
     S-->>C: error -32022, data.supported = [...]
     Note over C: raise McpError. Do NOT fall back: it's a modern server.
   else legacy server
-    S-->>C: any other error, or no answer within 3 s
+    S-->>C: any other error, or no answer within 10 s
     C->>S: initialize (protocolVersion 2025-11-25, capabilities, clientInfo)
     S-->>C: protocolVersion, serverInfo, instructions
     C-)S: notifications/initialized
@@ -64,7 +69,9 @@ sequenceDiagram
   end
 ```
 
-This isn't theory. The official MCP reference server (`@modelcontextprotocol/server-everything`) was legacy when this lesson was written. The client probed, got an error, fell back to `initialize`, and used its 13 tools without trouble. The bundled notes server speaks both eras and gets used as modern.
+This isn't theory. The official MCP reference server (`@modelcontextprotocol/server-everything`) was legacy when this lesson was written. It answered the probe within about a second with an error. The client fell back to `initialize` and used its 13 tools without trouble.
+
+**Why 10 seconds?** The probe's clock includes the server's start-up. The first `npx -y` run downloads the package, and a Java server has to start its JVM. With a short probe, a slow *modern* server looks silent, gets taken for legacy, and then fails the `initialize` it doesn't understand. The final review found exactly this with a 3-second probe. The bundled notes server speaks both eras and gets used as modern.
 
 ## 5. Tools
 
@@ -93,7 +100,8 @@ flowchart LR
 A few details:
 
 - **Names.** Providers accept only `[A-Za-z0-9_-]` and up to 64 characters in a tool name, and two servers may both have a `search` tool. `tool_name` (given) cleans the name and adds a prefix.
-- **Schemas.** The server's `inputSchema` becomes the tool's parameters as it is, so the week 3 validator checks every call before it reaches the server.
+- **Schemas.** The server's `inputSchema` becomes the tool's parameters after `clean_schema` (given). Your week 3 validator checks the simple things: required names, one type per property, enums. Real servers send more than that, such as `"type": ["string", "null"]` or `true` for "anything goes", and the validator would crash on those. `clean_schema` drops what it can't check, so those parameters aren't checked at all and the server does its own validation.
+- **Clashing names.** `files.read` and `files_read` would both become `files_read`, and providers reject a request with duplicate tool names. `mcp_tools` refuses that with an error that names both. Tools from different servers can clash too, so give each server its own `prefix`.
 - **No loop changes.** The MCP tool goes into `Agent(tools=...)` like any other. Tracing, approvals and evals see nothing new.
 
 ## 7. Trust

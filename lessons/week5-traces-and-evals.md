@@ -261,6 +261,7 @@ The runner tests drive your whole agent. If one fails with a message like `NotIm
 **This costs money.** A full `--provider both --trials 3` run is 90 agent runs. Start small:
 
 ```bash
+uv run python -m scripts.week5_demo                                           # 1 traced run + 6 eval runs, about $0.07
 uv run python -m scripts.evals --tasks easy --trials 1 --provider anthropic   # 5 short runs
 uv run python -m scripts.evals --tasks m05 --trials 3                         # one task, both providers
 uv run python -m scripts.evals --provider both --trials 3                     # the "done when"

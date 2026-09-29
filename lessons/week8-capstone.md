@@ -198,6 +198,7 @@ For 8d you're adding to week 5 code you already wrote. The docstrings say exactl
 **This costs money.** It's 15 tasks per provider, and the research tasks take several steps each. Start with one trial:
 
 ```bash
+uv run python -m scripts.week8_demo                                        # one task per agent, with traces, about $0.11
 uv run python -m scripts.evals --suite capstone --trials 1 --provider anthropic
 uv run python -m scripts.evals --suite capstone --tasks c0 --trials 3      # one agent, both providers
 uv run python -m scripts.evals --suite capstone --provider both --trials 3 # the "done when"

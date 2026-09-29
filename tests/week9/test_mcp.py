@@ -158,3 +158,12 @@ def test_an_agent_uses_mcp_tools_behind_an_approval_hook():
         agent = Agent(model, tools=tools, hooks=[ApprovalHook({}, approver=lambda call: True, default="ask")])
         r = agent.run("echo hello")
         assert r.messages[2].tool_results[0].content == "hello (via 2026-07-28)" and r.stop_reason == "end_turn"
+
+
+def test_close_releases_both_pipes_even_after_a_crash():
+    for mode, crash in (("modern", False), ("crash", True)):
+        with client(mode) as c:
+            if crash:
+                with pytest.raises(ConnectionError):
+                    c.call_tool("echo", {"text": "x"})
+        assert c.transport.proc.stdin.closed and c.transport.proc.stdout.closed, mode

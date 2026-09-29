@@ -6,7 +6,7 @@
 
 **You're done when:**
 
-1. `uv run pytest tests/week9` passes (17 tests), and
+1. `uv run pytest tests/week9` passes (18 tests), and
 2. `uv run python -m scripts.week9_demo` connects to the bundled notes server, saves three notes through MCP, and finds one by searching.
 
 ## 1. Read first

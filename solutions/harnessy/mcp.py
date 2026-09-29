@@ -64,7 +64,8 @@ class StdioTransport:
         self._lock = threading.Lock()
         self._closed = False
         self.notifications: list[dict[str, Any]] = []
-        threading.Thread(target=self._read, daemon=True).start()
+        self._reader = threading.Thread(target=self._read, daemon=True)
+        self._reader.start()
 
     def expect(self, request_id: Any) -> queue.Queue:
         """Register interest in the response to request_id (before sending the request)."""
@@ -107,22 +108,25 @@ class StdioTransport:
             boxes, self._pending = list(self._pending.values()), {}
         for box in boxes:
             box.put(None)
+        self.proc.stdout.close()
 
     def close(self, timeout_s: float = 2.0) -> None:
-        """Close stdin, wait; then terminate, wait; then kill (the spec's shutdown order)."""
-        if self.proc.poll() is not None:
-            return
+        """Close stdin, wait; then terminate, wait; then kill (the spec's shutdown order).
+        Finally wait for the reader thread, which closes stdout, so no pipe is left open."""
         try:
             self.proc.stdin.close()
         except OSError:
             pass
         for step in (lambda: None, self.proc.terminate, self.proc.kill):
+            if self.proc.poll() is not None:
+                break
             step()
             try:
                 self.proc.wait(timeout=timeout_s)
-                return
+                break
             except subprocess.TimeoutExpired:
                 continue
+        self._reader.join(timeout=timeout_s)
 
 
 # --- The client ---------------------------------------------------------------------------

@@ -48,6 +48,7 @@ cp .env.example .env     # then fill in your keys and model names
 | `evals/tasks/*.yaml` | 5 | Given: 15 eval tasks (5 easy, 5 medium, 5 hard) |
 | `scripts/trace_view.py` | 5 | Given: print a trace as a timeline |
 | `scripts/evals.py` | 5 | Given: run the evals, print and save the results, compare with the last run |
+| `scripts/week5_demo.py` | 5 | Given: one traced run as a timeline, then 3 tasks scored before and after one change |
 | `harnessy/hooks.py` | 6 | **Exercise:** `HookRunner` (`Hook`, `Block`, `StopCheck` are given) |
 | `harnessy/approvals.py` | 6 | **Exercise:** `ApprovalHook.before_tool` (`terminal_approver` is given) |
 | `harnessy/subagents.py` | 6 | **Exercise:** `subagent_tool` |

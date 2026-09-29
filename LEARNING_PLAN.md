@@ -35,6 +35,7 @@ This repo is the course. For each week:
 | 6 | [Control flow](lessons/week6-control-flow.md) | `tests/week6` | `uv run python -m scripts.week6_demo` |
 | 7 | [Production concerns](lessons/week7-production.md) | `tests/week7` | `uv run python -m scripts.week7_demo` |
 | 8 | [Capstone](lessons/week8-capstone.md) | `tests/week8` | `uv run python -m scripts.evals --suite capstone --trials 1` |
+| 9 (bonus) | [Tools from anywhere with MCP](lessons/week9-mcp.md) | `tests/week9` | `uv run python -m scripts.week9_demo` |
 
 **How to use this plan.** Work through one week at a time, in order: each week adds a layer the next one depends on. Every week has the same parts:
 
@@ -242,6 +243,25 @@ The agent you write in week 8 is just configuration: a prompt, a list of tools a
 
 **Stretch.** Read OpenAI's [Harness engineering](https://openai.com/index/harness-engineering/) post on building a product almost entirely with agents. Map its ideas (making things legible to the agent, enforcing rules mechanically, fast feedback loops) onto your own design.
 
+## Week 9 (bonus): Tools from anywhere with MCP
+
+**Why it matters.** The Model Context Protocol (MCP) lets anyone publish tools once, for every agent: a server offers tools as a name, a description and a JSON Schema, which is exactly what your registry already speaks. Connecting to MCP turns a whole ecosystem of servers into harnessy tools, and it tests the week 3 design: if the harness is generic, MCP tools need no loop changes at all.
+
+**Read**
+
+- [MCP specification](https://modelcontextprotocol.io/specification/2026-07-28): the overview, then [versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning), [stdio](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio) and [tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools).
+
+**Build**
+
+- [ ] A JSON-RPC client over stdio: one message per line, responses matched to requests by id, timeouts, clean shutdown
+- [ ] Era detection: probe `server/discover`; modern servers get per-request `_meta`, legacy servers get the `initialize` handshake
+- [ ] `tools/list` with paging, and `tools/call` with every content type turned into text for the model
+- [ ] `mcp_tools`: each MCP tool becomes a harnessy `Tool`, tagged with all three trifecta legs unless you trust the server
+
+**Done when.** An agent saves and searches notes through the bundled MCP server, and connects to at least one real MCP server (`--server`), whatever era it speaks.
+
+**Stretch.** Streamable HTTP for remote servers, resources as a read-only tool, or answering `input_required` results with the week 6 approver.
+
 ## Guidelines while you build
 
 These ten rules come from the readings above. Check your code against them at the end of each week.
@@ -303,3 +323,4 @@ Copy this into your `NOTES.md` and update it when you finish each week's "Done w
 | 6 | Approval pauses a run; subagents return summaries | Not started | |
 | 7 | Survives 429s and a hung tool; injection blocked | Not started | |
 | 8 | 3 agents, 3 of 5 tasks passed each, write-up done | Not started | |
+| 9 | Agent uses MCP tools; one real server connected | Not started | |

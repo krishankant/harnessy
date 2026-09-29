@@ -18,6 +18,8 @@ Diagrams of the harness as built on `master`, drawn from the eight lessons in `l
 - [Fig 12: A prompt injection, blocked](#fig-12-a-prompt-injection-blocked)
 - [Fig 13: One eval trial](#fig-13-one-eval-trial)
 - [Fig 14: The three capstone agents on one harness](#fig-14-the-three-capstone-agents-on-one-harness)
+- [Fig 15: Connecting to an MCP server](#fig-15-connecting-to-an-mcp-server)
+- [Fig 16: An MCP tool call](#fig-16-an-mcp-tool-call)
 
 ## Structure
 
@@ -63,6 +65,7 @@ flowchart TB
     D["list_tables · run_sql · plot_query"]
     SUB["spawn_subagent"]
     OUT["send_email · outbox"]
+    MCPT["MCP server tools · week 9"]
   end
 
   subgraph MODELS["Models"]
@@ -82,6 +85,7 @@ flowchart TB
   HOOKS --> HOOKLIST
   REG --> TOOLS
   SUB -. "new child Agent" .-> RUN
+  MCPT -. "McpClient over stdio" .-> MCPS[("MCP server")]
   RUN -- "complete(view, specs, system)" --> RETRY
   RETRY --> ANT
   RETRY --> OAI
@@ -537,6 +541,64 @@ flowchart LR
 Each agent is a `make_agent` function of a few lines: a system prompt, tools, hooks and limits. The research agent's tools form the lethal trifecta, so its configuration has to carry the guard. The code agent can't say it's done while the tests fail.
 
 *Source: agents/research.py · code.py · data.py · lesson 8 §2–6*
+
+
+## MCP (week 9)
+
+Any MCP server's tools become ordinary harnessy tools. The loop doesn't change: the registry, approvals, tracing and evals see just another `Tool`.
+
+### Fig 15: Connecting to an MCP server
+
+```mermaid
+sequenceDiagram
+  participant C as McpClient
+  participant S as MCP server
+  C->>S: server/discover (with modern _meta)
+  alt modern server
+    S-->>C: DiscoverResult (supportedVersions, serverInfo, instructions)
+    Note over C: era = modern. Every request carries _meta.
+  else modern, but not our version
+    S-->>C: error -32022, data.supported = [...]
+    Note over C: raise McpError. No fallback: it's a modern server.
+  else legacy server
+    S-->>C: any other error, or no answer within 3 s
+    C->>S: initialize (protocolVersion 2025-11-25, capabilities, clientInfo)
+    S-->>C: protocolVersion, serverInfo, instructions
+    C-)S: notifications/initialized
+    Note over C: era = legacy. No _meta.
+  end
+```
+
+MCP 2026-07-28 has no session: every request carries its version in `_meta`. Older servers still expect the `initialize` handshake. The official reference server (`@modelcontextprotocol/server-everything`) answered as legacy when this was built, and the client fell back correctly.
+
+*Source: mcp.py (`connect`, `_initialize_legacy`) · lesson 9 §4*
+
+### Fig 16: An MCP tool call
+
+```mermaid
+sequenceDiagram
+  participant A as Agent
+  participant R as ToolRegistry
+  participant K as _caller
+  participant C as McpClient
+  participant T as StdioTransport
+  participant S as MCP server
+  A->>R: call(notes__add_note, args)
+  R->>R: validate args against the server's inputSchema
+  R->>K: fn(**args) in a worker thread
+  K->>C: call_tool("add_note", args)
+  C->>T: expect(id), then send one JSON line
+  T->>S: {"method": "tools/call", ...}
+  S-->>T: {"id": 7, "result": {"content": [...], "isError": false}}
+  T-->>C: reader thread hands the response to request id 7
+  C-->>K: result
+  K-->>R: content_to_text(result), or McpToolError if isError
+  R-->>A: ToolResult (an error result the model can read, on failure)
+```
+
+Every MCP tool carries all three lethal-trifecta tags unless you pass `tags=`, so an agent using them needs an approval hook. The server gets a minimal environment, so your API keys don't reach it unless you pass them.
+
+*Source: mcp.py (`mcp_tools`, `_caller`, `StdioTransport`) · lesson 9 §6–7*
 
 ---
 

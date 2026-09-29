@@ -2,7 +2,7 @@
 
 A small agent harness you build yourself, one week at a time. It works with any model provider: Anthropic, OpenAI, or a local model through Ollama. It follows the 8-week *Harness Engineering* learning plan. Each week you read a short lesson, fill in the missing pieces of the code, and make the tests pass.
 
-The repo covers all eight weeks: **1** a provider-neutral model interface, **2** the agent loop, **3** tools, **4** context and memory, **5** traces and evals, **6** hooks, approvals, subagents and planning, **7** production concerns (retries, streaming, cost limits, a sandbox, the lethal-trifecta check) and **8** the capstone (three agents on one harness).
+The repo covers all eight weeks: **1** a provider-neutral model interface, **2** the agent loop, **3** tools, **4** context and memory, **5** traces and evals, **6** hooks, approvals, subagents and planning, **7** production concerns (retries, streaming, cost limits, a sandbox, the lethal-trifecta check) and **8** the capstone (three agents on one harness), plus a bonus **9**: connecting to any MCP server.
 
 **Start here:** [`LEARNING_PLAN.md`](LEARNING_PLAN.md) is the 8-week plan: what each week is about, what to read, what to build, and how you know you're done. Each week then has a hands-on lesson in [`lessons/`](lessons/).
 
@@ -65,6 +65,9 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/safety.py` | 7 | **Exercise:** `check_trifecta` |
 | `harnessy/tools/outbox.py` | 7 | Given: a fake `send_email` that writes to a file |
 | `scripts/week7_demo.py` | 7 | Given: streaming, a retried 429, a cost limit, a blocked prompt injection |
+| `harnessy/mcp.py` | 9 | **Exercise:** `McpClient.request`, `connect`, `list_tools`, `content_to_text`, `mcp_tools` (the stdio transport is given) |
+| `scripts/mcp_notes_server.py` | 9 | Given: an example MCP server (notes), speaking both MCP eras |
+| `scripts/week9_demo.py` | 9 | Given: an agent using MCP tools; `--server` connects to any stdio MCP server |
 | `harnessy/tools/localweb.py` | 8 | **Exercise:** `LocalWeb.search` (serving and `web_search` are given) |
 | `harnessy/tools/code.py` | 8 | **Exercise:** `edit_text` (`code_tools` is given) |
 | `harnessy/tools/data.py` | 8 | **Exercise:** `query_readonly` (`data_tools`, charts are given) |

@@ -65,6 +65,7 @@ cp .env.example .env     # then fill in your keys and model names
 | `harnessy/safety.py` | 7 | **Exercise:** `check_trifecta` |
 | `harnessy/tools/outbox.py` | 7 | Given: a fake `send_email` that writes to a file |
 | `scripts/week7_demo.py` | 7 | Given: streaming, a retried 429, a cost limit, a blocked prompt injection |
+| `scripts/week8_demo.py` | 8 | Given: the research, code and data agents solving one capstone task each, with traces |
 | `harnessy/tools/localweb.py` | 8 | **Exercise:** `LocalWeb.search` (serving and `web_search` are given) |
 | `harnessy/tools/code.py` | 8 | **Exercise:** `edit_text` (`code_tools` is given) |
 | `harnessy/tools/data.py` | 8 | **Exercise:** `query_readonly` (`data_tools`, charts are given) |

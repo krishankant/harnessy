@@ -613,7 +613,7 @@ The same system as Fig 1, told as an analogy for newcomers: the model is the bra
 
 ![Each harnessy layer mapped to a body part, with a second everyday analogy: the model interface is the spinal cord, the loop the heartbeat, tools the hands, context the working memory, the tracer the nerves, evals the check-up, hooks the reflexes, subagents specialist organs, retries and cost the metabolism, the sandbox and trifecta check the skin and immune system, the capstone agents trained muscles, and MCP a prosthetic socket](anatomy.png)
 
-The interactive version, [`anatomy.html`](anatomy.html), has a card per organ: what it does, what breaks without it, and a second analogy. It ends with four ways the analogy breaks: the model doesn't learn during a run, feels no pain, can be swapped, and can clone itself. The image is rendered from [`anatomy-image.html`](anatomy-image.html) at 1600×1000, 2× scale.
+The interactive version, [`anatomy.html`](anatomy.html), has a card per organ: what it does, what breaks without it, and a second analogy. It ends with four ways the analogy breaks: the model doesn't learn during a run, feels no pain, can be swapped, and can clone itself. The same cards are also a static poster, [`anatomy-organs.png`](anatomy-organs.png), for sharing or printing. Both images are rendered at 2× scale from [`anatomy-image.html`](anatomy-image.html) and [`anatomy-organs-image.html`](anatomy-organs-image.html).
 
 *Source: all lessons · the numbers are course weeks*
 

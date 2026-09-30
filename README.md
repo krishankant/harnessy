@@ -8,6 +8,10 @@ The repo covers all eight weeks: **1** a provider-neutral model interface, **2**
 
 For diagrams of how it all fits together (architecture, sequence, state and class diagrams), see [`docs/architecture.md`](docs/architecture.md).
 
+**The idea in one picture.** The model is the brain; the harness is the body. Each week builds one organ: the loop is the heartbeat, tools are the hands, evals are the check-up, the trifecta check is the immune system. [`docs/anatomy.html`](docs/anatomy.html) explains every organ with a second everyday analogy and where the metaphor breaks (open it in a browser).
+
+![The model is the brain, the harness is the body: each harnessy layer mapped to a body part](docs/anatomy.png)
+
 ## Setup
 
 ```bash

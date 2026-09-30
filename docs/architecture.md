@@ -22,6 +22,7 @@ Diagrams of the harness as built on `main`, drawn from the lessons in `lessons/`
 - [Fig 14: The three capstone agents on one harness](#fig-14-the-three-capstone-agents-on-one-harness)
 - [Fig 15: Connecting to an MCP server](#fig-15-connecting-to-an-mcp-server)
 - [Fig 16: An MCP tool call](#fig-16-an-mcp-tool-call)
+- [Fig 17: The harness as a body](#fig-17-the-harness-as-a-body)
 
 ## Structure
 
@@ -603,6 +604,18 @@ sequenceDiagram
 Every MCP tool carries all three lethal-trifecta tags unless you pass `tags=`, so an agent using them needs an approval hook. The server gets a minimal environment, so your API keys don't reach it unless you pass them.
 
 *Source: mcp.py (`mcp_tools`, `_caller`, `StdioTransport`) · lesson 9 §6–7*
+
+## The big picture as a body
+
+The same system as Fig 1, told as an analogy for newcomers: the model is the brain, and every harness layer gives it one ability a body has.
+
+### Fig 17: The harness as a body
+
+![Each harnessy layer mapped to a body part, with a second everyday analogy: the model interface is the spinal cord, the loop the heartbeat, tools the hands, context the working memory, the tracer the nerves, evals the check-up, hooks the reflexes, subagents specialist organs, retries and cost the metabolism, the sandbox and trifecta check the skin and immune system, the capstone agents trained muscles, and MCP a prosthetic socket](anatomy.png)
+
+The interactive version, [`anatomy.html`](anatomy.html), has a card per organ: what it does, what breaks without it, and a second analogy. It ends with four ways the analogy breaks: the model doesn't learn during a run, feels no pain, can be swapped, and can clone itself. The image is rendered from [`anatomy-image.html`](anatomy-image.html) at 1600×1000, 2× scale.
+
+*Source: all lessons · the numbers are course weeks*
 
 ---
 

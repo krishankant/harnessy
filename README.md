@@ -12,6 +12,8 @@ For diagrams of how it all fits together (architecture, sequence, state and clas
 
 ![The model is the brain, the harness is the body: each harnessy layer mapped to a body part](docs/anatomy.png)
 
+![Every organ card: what the body part does, what the harness layer does, a second everyday analogy, and what breaks without it](docs/anatomy-organs.png)
+
 ## Setup
 
 ```bash

@@ -615,6 +615,8 @@ The same system as Fig 1, told as an analogy for newcomers: the model is the bra
 
 The interactive version, [`anatomy.html`](anatomy.html), has a card per organ: what it does, what breaks without it, and a second analogy. It ends with four ways the analogy breaks: the model doesn't learn during a run, feels no pain, can be swapped, and can clone itself. The same cards are also a static poster, [`anatomy-organs.png`](anatomy-organs.png), for sharing or printing. Both images are rendered at 2× scale from [`anatomy-image.html`](anatomy-image.html) and [`anatomy-organs-image.html`](anatomy-organs-image.html).
 
+![The organ cards as one poster: for each body part, what it does, the harness layer it maps to, a second everyday analogy, and what breaks without it, followed by four ways an agent is not a body](anatomy-organs.png)
+
 *Source: all lessons · the numbers are course weeks*
 
 ---

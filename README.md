@@ -76,5 +76,7 @@ tests/week1…week6/  offline tests (fixtures in tests/fixtures/)
 evals/tasks/         eval tasks (YAML); evals/results/ holds saved runs and traces (git-ignored)
 scripts/             live demos (need .env)
 docs/traces.md       three real traces read line by line (read with week 5)
+docs/subagents.md    how an agent decides to launch a subagent (read with week 6)
+docs/todo.md         how the model plans with the todo list (read with week 6)
 docs/superpowers/    the design spec and implementation plan for this repo
 ```

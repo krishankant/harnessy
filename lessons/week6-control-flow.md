@@ -89,6 +89,8 @@ The cost: every child is a whole agent run. The Anthropic post measured multi-ag
 
 `@tool(timeout_s=600)`: the registry's default 30-second timeout would cut a child off mid-run, so the tool raises its own limit.
 
+How the model decides to delegate, the levers you have over it, and six worked examples with diagrams: [`docs/subagents.md`](../docs/subagents.md).
+
 ## 7. The todo list
 
 `TodoList` is two things at once:
@@ -99,6 +101,8 @@ The cost: every child is a whole agent run. The Anthropic post measured multi-ag
 It adds the list to the **view**, the last message sent to the model, and never to the history. That's the week 4 split again: `RunResult.messages` stays an honest record, and the model still sees an up-to-date plan on every call. `test_the_todo_list_reaches_the_model_but_not_the_history` checks both halves through a real `Agent`.
 
 Watch for one thing: the list lands at the *end* of the prompt, so it doesn't break the prompt cache's prefix.
+
+What Claude actually does with the list (it ignores it unless told to plan), the levers that make it plan, and when the list is worth its cost: [`docs/todo.md`](../docs/todo.md).
 
 ## 8. Rejecting "done"
 

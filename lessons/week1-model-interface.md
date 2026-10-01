@@ -14,6 +14,7 @@
 | [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (Anthropic) | The difference between a *workflow* and an *agent*, and the advice to start with the simplest thing that works. |
 | [How tool use works](https://platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works) (Claude docs) and [Function calling](https://platform.openai.com/docs/guides/function-calling) (OpenAI docs) | Read them side by side. Write down every place the two formats differ. You'll need that list for section 3. |
 | [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) (Ollama) | How a local model can pretend to be OpenAI. This is why one OpenAI adapter covers Ollama too. |
+| [`docs/model-interfaces.md`](../docs/model-interfaces.md) (this repo) | The two formats side by side: one tool round trip in Anthropic Messages, OpenAI Chat Completions and OpenAI Responses, plus stop reasons, usage fields, reasoning and streaming. Check your own list of differences against it. |
 
 ## 2. What you're building this week
 

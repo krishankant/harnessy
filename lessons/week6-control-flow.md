@@ -177,6 +177,8 @@ sequenceDiagram
 
 *Fig 10 in [docs/architecture.md](../docs/architecture.md#fig-10-subagents).*
 
+How the model decides to delegate, the levers you have over it, and six worked examples with diagrams: [`docs/subagents.md`](../docs/subagents.md).
+
 ## 7. The todo list
 
 `TodoList` is two things at once:

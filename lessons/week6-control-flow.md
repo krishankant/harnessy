@@ -25,6 +25,8 @@ You could add each of those as another `if` in `run`. After week 5 you've felt w
 
 ## 3. The hook points
 
+For diagrams of every hook point, how several hooks chain, and six example hooks (all tested): [`docs/hooks.md`](../docs/hooks.md).
+
 ```
 on_start(agent, task)
 loop:

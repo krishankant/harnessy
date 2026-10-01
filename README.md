@@ -53,5 +53,6 @@ solutions/harnessy/  reference copy, complete
 lessons/             one lesson per week
 tests/week1, week2/  offline tests (fixtures in tests/fixtures/)
 scripts/             live demos (need .env)
+docs/model-interfaces.md  how the Anthropic and OpenAI APIs differ (read with week 1)
 docs/superpowers/    the design spec and implementation plan for this repo
 ```

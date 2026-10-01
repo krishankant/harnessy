@@ -74,6 +74,8 @@ Print any saved trace with:
 uv run python -m scripts.trace_view evals/results/traces/<run>/<task>-1.jsonl
 ```
 
+For three real traces read line by line (no tools, one tool call, and a run where the model checks its own work), see [`docs/traces.md`](../docs/traces.md).
+
 ## 5. Wire it into your loop
 
 In **your** `harnessy/loop.py`:

@@ -190,6 +190,8 @@ It adds the list to the **view**, the last message sent to the model, and never 
 
 Watch for one thing: the list lands at the *end* of the prompt, so it doesn't break the prompt cache's prefix.
 
+What Claude actually does with the list (it ignores it unless told to plan), the levers that make it plan, and when the list is worth its cost: [`docs/todo.md`](../docs/todo.md).
+
 ## 8. Rejecting "done"
 
 ```python

@@ -1,18 +1,47 @@
 # harnessy
 
-A small agent harness you build yourself, one week at a time. It works with any model provider: Anthropic, OpenAI, or a local model through Ollama. It follows the 8-week *Harness Engineering* learning plan. Each week you read a short lesson, fill in the missing pieces of the code, and make the tests pass.
+A small agent harness you build yourself, one week at a time. It works with any model provider: Anthropic, OpenAI, or a local model through Ollama. Each week you read a short lesson, fill in the missing pieces of the code, and make the tests pass.
 
-The repo covers all eight weeks: **1** a provider-neutral model interface, **2** the agent loop, **3** tools, **4** context and memory, **5** traces and evals, **6** hooks, approvals, subagents and planning, **7** production concerns (retries, streaming, cost limits, a sandbox, the lethal-trifecta check) and **8** the capstone (three agents on one harness), plus a bonus **9**: connecting to any MCP server.
+**What a harness is.** The model only turns text into text. The harness is everything around it: the loop that keeps calling the model, the tools it can use, what goes into its context, what it remembers, what it may do without asking, and how you measure whether it works. Two products on the same model can behave very differently because of their harness.
 
-**Start here:** [`LEARNING_PLAN.md`](LEARNING_PLAN.md) is the 8-week plan: what each week is about, what to read, what to build, and how you know you're done. Each week then has a hands-on lesson in [`lessons/`](lessons/).
+## The idea in one picture
 
-For diagrams of how it all fits together (architecture, sequence, state and class diagrams), see [`docs/architecture.md`](docs/architecture.md). For how the Anthropic and OpenAI APIs differ (messages, tool calls, stop reasons, usage, streaming), see [`docs/model-interfaces.md`](docs/model-interfaces.md). To see what an agent run looks like on disk, see [`docs/traces.md`](docs/traces.md). For how an agent decides to launch a subagent, with examples, see [`docs/subagents.md`](docs/subagents.md). For how the model plans with the todo list, from two real runs, see [`docs/todo.md`](docs/todo.md). For hooks, with six example hooks, see [`docs/hooks.md`](docs/hooks.md). For the lethal trifecta, how an injected web page can steal your data and how harnessy stops it, see [`docs/trifecta.md`](docs/trifecta.md). To see every harnessy module next to the Claude Code feature that does the same job (hooks, permissions, subagents, compaction, `CLAUDE.md`, transcripts), see [`docs/claude-code.md`](docs/claude-code.md).
-
-**The idea in one picture.** The model is the brain; the harness is the body. Each week builds one organ: the loop is the heartbeat, tools are the hands, evals are the check-up, the trifecta check is the immune system. [`docs/anatomy.html`](docs/anatomy.html) explains every organ with a second everyday analogy and where the metaphor breaks (open it in a browser). The same descriptions as one image: [`docs/anatomy-organs.png`](docs/anatomy-organs.png).
+The model is the brain; the harness is the body. Each week builds one organ: the loop is the heartbeat, tools are the hands, evals are the check-up, the trifecta check is the immune system. [`docs/anatomy.html`](docs/anatomy.html) explains every organ with a second everyday analogy and where the metaphor breaks (open it in a browser).
 
 ![The model is the brain, the harness is the body: each harnessy layer mapped to a body part](docs/anatomy.png)
 
 ![Every organ card: what the body part does, what the harness layer does, a second everyday analogy, and what breaks without it](docs/anatomy-organs.png)
+
+## The weeks
+
+**Start here:** [`LEARNING_PLAN.md`](LEARNING_PLAN.md) is the 8-week plan: what each week is about, what to read, what to build, and how you know you're done. Each week then has a hands-on lesson:
+
+| Week | You build | Lesson |
+| --- | --- | --- |
+| 1 | One interface for every model provider | [`week1-model-interface.md`](lessons/week1-model-interface.md) |
+| 2 | The agent loop | [`week2-agent-loop.md`](lessons/week2-agent-loop.md) |
+| 3 | Tools | [`week3-tools.md`](lessons/week3-tools.md) |
+| 4 | Context and memory | [`week4-context-and-memory.md`](lessons/week4-context-and-memory.md) |
+| 5 | Traces and evals | [`week5-traces-and-evals.md`](lessons/week5-traces-and-evals.md) |
+| 6 | Hooks, approvals, subagents and planning | [`week6-control-flow.md`](lessons/week6-control-flow.md) |
+| 7 | Retries, streaming, cost limits, a sandbox, the lethal-trifecta check | [`week7-production.md`](lessons/week7-production.md) |
+| 8 | Capstone: three agents on one harness | [`week8-capstone.md`](lessons/week8-capstone.md) |
+| 9 (bonus) | Tools from any MCP server | [`week9-mcp.md`](lessons/week9-mcp.md) |
+
+## Guides
+
+Deeper reading, for when a lesson raises a question:
+
+| If you want to know… | Read |
+| --- | --- |
+| How all the parts fit together (architecture, sequence, state and class diagrams) | [`docs/architecture.md`](docs/architecture.md), or the interactive [`architecture-archify.html`](docs/architecture-archify.html) |
+| How the Anthropic and OpenAI APIs differ (messages, tool calls, stop reasons, usage, streaming) | [`docs/model-interfaces.md`](docs/model-interfaces.md) |
+| What an agent run looks like on disk, read line by line | [`docs/traces.md`](docs/traces.md) |
+| How an agent decides to launch a subagent | [`docs/subagents.md`](docs/subagents.md) |
+| How the model plans with the todo list, from two real runs | [`docs/todo.md`](docs/todo.md) |
+| How to change the loop without editing it, with six example hooks | [`docs/hooks.md`](docs/hooks.md) |
+| How an injected web page can steal your data, and how harnessy stops it | [`docs/trifecta.md`](docs/trifecta.md) |
+| Which Claude Code feature matches each harnessy module | [`docs/claude-code.md`](docs/claude-code.md) |
 
 ## Setup
 
@@ -101,9 +130,9 @@ This is handled in `tests/conftest.py` and `scripts/__init__.py`. Look at the so
 harnessy/            your copy: the exercises live here
 solutions/harnessy/  reference copy, complete
 lessons/             one lesson per week
-tests/week1…week6/  offline tests (fixtures in tests/fixtures/)
+tests/week1…week9/   offline tests (fixtures in tests/fixtures/)
 evals/tasks/         eval tasks (YAML); evals/capstone/ the week 8 tasks; evals/corpus/ the local web
                      evals/results/ holds saved runs and traces (git-ignored)
 scripts/             live demos (need .env)
-docs/superpowers/    the design spec and implementation plan for this repo
+docs/                guides, diagrams and the anatomy pages
 ```

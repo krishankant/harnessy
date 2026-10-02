@@ -43,6 +43,7 @@ Deeper reading, for when a lesson raises a question:
 | How the model plans with the todo list, from two real runs | [`docs/todo.md`](docs/todo.md) |
 | How to change the loop without editing it, with six example hooks | [`docs/hooks.md`](docs/hooks.md) |
 | How an injected web page can steal your data, and how harnessy stops it | [`docs/trifecta.md`](docs/trifecta.md) |
+| What a skill is, and how harnessy would load one on demand | [`docs/skills.md`](docs/skills.md) |
 | What the sandbox stops, what it doesn't, and how to add real isolation | [`docs/sandbox.md`](docs/sandbox.md) (`uv run python -m scripts.sandbox_demo`) |
 | Which Claude Code feature matches each harnessy module | [`docs/claude-code.md`](docs/claude-code.md) |
 

@@ -169,6 +169,26 @@ Two rules follow, and the rest of the course keeps coming back to them:
 - **The model decides what to do; the harness decides what is allowed.** Something the model chooses (read a file, plan, delegate) is a tool. Something that must happen every time (ask before sending email, refuse to stop while tests fail) is a hook or a limit. Never put a must-happen rule only in the prompt.
 - **An agent is just configuration.** By week 8, a research agent, a code agent and a data agent are each a system prompt, a list of tools and some limits on the *same* `Agent`. If agent-specific logic creeps into the loop, the harness isn't generic anymore.
 
+### Loop engineering vs harness engineering
+
+You will hear both terms. *Loop engineering* is one part of *harness engineering*: the work of deciding how the cycle runs, what gets fed back into it, and when it ends. In the picture above, it owns the limits and the stop and feedback hooks. The rest of the harness decides what the model sees, what it can do and what it is allowed to do.
+
+```
+harness engineering
+├── loop engineering      how the cycle runs, gets feedback, and stops    (weeks 2, 6)
+├── context engineering   what the model sees on each turn                (week 4)
+├── tool design           what the model can do                           (week 3)
+├── safety / permissions  what it is allowed to do                        (weeks 6–7)
+└── observability / evals what happened, and whether it got better        (week 5)
+```
+
+The term covers two loops:
+
+- **The inner loop** is one run: the `while True:` above. Its questions are when to call the model again (after every tool call), when to stop no matter what (the limits), what counts as done (`end_turn`, unless an `on_stop` hook such as `StopCheck` says "not yet"), and what goes back to the model (tool results and error messages instead of crashes).
+- **The outer loop** wraps whole runs: run the tests, feed any failures back, and go again. It also wraps the people building the agent: run the evals, change the harness, run the evals again (week 5).
+
+Context engineering is the closest neighbour. Context engineering decides *what goes into* each model call; loop engineering decides *how many calls* there are and *what each result triggers*. The harness is the whole machine, the loop is its engine, and loop engineering is tuning that engine.
+
 ## 4. Why the harness matters as much as the model
 
 Two products on the same model can behave very differently. They differ in what the model sees (context), what it can do (tools), what it is stopped from doing (hooks and limits), and whether anyone checks the result (evals). Each line in section 2 is a decision like that. The course has you make each one yourself, and week 5's evals let you measure whether it helped.

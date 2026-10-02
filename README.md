@@ -78,5 +78,6 @@ scripts/             live demos (need .env)
 docs/traces.md       three real traces read line by line (read with week 5)
 docs/subagents.md    how an agent decides to launch a subagent (read with week 6)
 docs/todo.md         how the model plans with the todo list (read with week 6)
+docs/hooks.md        hooks, with six tested example hooks (read with week 6)
 docs/superpowers/    the design spec and implementation plan for this repo
 ```

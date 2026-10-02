@@ -246,6 +246,8 @@ sequenceDiagram
 
 *Fig 12 in [docs/architecture.md](../docs/architecture.md#fig-12-a-prompt-injection-blocked).*
 
+For the full story (a step-by-step attack, why prompts and filters fail, the dual-model design and its catch, and a taint-tracking hook), see [`docs/trifecta.md`](../docs/trifecta.md).
+
 ## 8. Exercises
 
 | # | Function | File | Tests |

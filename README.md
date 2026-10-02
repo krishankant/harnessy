@@ -35,6 +35,7 @@ Deeper reading, for when a lesson raises a question:
 | If you want to know… | Read |
 | --- | --- |
 | What a harness is, with the whole loop on one screen and each line marked by its week | [`docs/what-is-a-harness.md`](docs/what-is-a-harness.md) (read this first) |
+| Why each part exists: eight ways an agent goes wrong, run with and without the fix | [`docs/failures.md`](docs/failures.md) (`uv run python -m scripts.failure_gallery`) |
 | How all the parts fit together (architecture, sequence, state and class diagrams) | [`docs/architecture.md`](docs/architecture.md), or the interactive [`architecture-archify.html`](docs/architecture-archify.html) |
 | How the Anthropic and OpenAI APIs differ (messages, tool calls, stop reasons, usage, streaming) | [`docs/model-interfaces.md`](docs/model-interfaces.md) |
 | What an agent run looks like on disk, read line by line | [`docs/traces.md`](docs/traces.md) |

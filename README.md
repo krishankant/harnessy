@@ -38,6 +38,8 @@ Deeper reading, for when a lesson raises a question:
 | Why each part exists: eight ways an agent goes wrong, run with and without the fix | [`docs/failures.md`](docs/failures.md) (`uv run python -m scripts.failure_gallery`) |
 | How all the parts fit together (architecture, sequence, state and class diagrams) | [`docs/architecture.md`](docs/architecture.md), or the interactive [`architecture-archify.html`](docs/architecture-archify.html) |
 | How the Anthropic and OpenAI APIs differ (messages, tool calls, stop reasons, usage, streaming) | [`docs/model-interfaces.md`](docs/model-interfaces.md) |
+| How tool use works with Claude, from a beginner's view, with the agent loop drawn out | [`docs/claude-tool-use-guide-v2.md`](docs/claude-tool-use-guide-v2.md) and the diagram [`AI_Tool_Use_Execution_Loop.png`](docs/AI_Tool_Use_Execution_Loop.png) |
+| The same for OpenAI function calling (Responses API and Chat Completions), mapped onto Claude's | [`docs/openai-tool-use-guide.md`](docs/openai-tool-use-guide.md) |
 | What an agent run looks like on disk, read line by line | [`docs/traces.md`](docs/traces.md) |
 | How an agent decides to launch a subagent | [`docs/subagents.md`](docs/subagents.md) |
 | How the model plans with the todo list, from two real runs | [`docs/todo.md`](docs/todo.md) |

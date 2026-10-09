@@ -22,6 +22,8 @@
 
 In week 3 you learned that a model only knows a tool through its name, its description and a JSON Schema. The Model Context Protocol (MCP) is an agreement about exactly that. A **server** publishes tools in that shape, and any **client** can list and call them. Someone writes a GitHub server, a database server or a browser server once, and every agent that speaks MCP can use it.
 
+MCP doesn't replace function calling. The model still asks for tools with `tool_use`, and MCP only changes where the tool comes from and where it runs. [`docs/function-calling-vs-mcp.md`](../docs/function-calling-vs-mcp.md) builds one tool both ways and shows what each side sends.
+
 Your harness already speaks "name + description + JSON Schema". This week you teach it the protocol around that, so any MCP server's tools become ordinary harnessy `Tool`s. The loop, the registry, approvals, tracing and evals all work on them unchanged.
 
 ## 3. The protocol in one screen

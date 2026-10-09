@@ -445,4 +445,4 @@ Why Chat Completions and not Responses, and what a Responses adapter would chang
 ## Sources
 
 - OpenAI: [Function calling](https://developers.openai.com/api/docs/guides/function-calling), [Migrating to Responses](https://developers.openai.com/api/docs/guides/migrate-to-responses), [Agents SDK](https://openai.github.io/openai-agents-python/)
-- In this repo: [`model-interfaces.md`](model-interfaces.md), `harnessy/models/openai.py`
+- In this repo: [`model-interfaces.md`](model-interfaces.md), `harnessy/models/openai.py`, and [`function-calling-vs-mcp.md`](function-calling-vs-mcp.md) for how function calling relates to MCP

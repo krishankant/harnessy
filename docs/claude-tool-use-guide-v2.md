@@ -344,3 +344,7 @@ to call a tool.   ONE tool.                     tool.             Generates pros
 | **`tool_result` Block** | Response from application to Claude | Contains `tool_use_id`, `content`, and optional `is_error` |
 | **Matching ID** | Connects call request to call result | `tool_result.tool_use_id == tool_use.id` |
 | **Message Ordering** | Strict requirement in conversation history | `user` (`tool_result`) MUST immediately follow `assistant` (`tool_use`) |
+
+---
+
+**Next:** [`function-calling-vs-mcp.md`](function-calling-vs-mcp.md) moves a tool out of your app and into an MCP server. It shows that the `tool_use`/`tool_result` exchange above doesn't change, and what MCP adds around it.

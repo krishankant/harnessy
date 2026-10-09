@@ -41,6 +41,7 @@ Deeper reading, for when a lesson raises a question:
 | How tool use works with Claude, from a beginner's view, with the agent loop drawn out | [`docs/claude-tool-use-guide-v2.md`](docs/claude-tool-use-guide-v2.md) and the diagram [`AI_Tool_Use_Execution_Loop.png`](docs/AI_Tool_Use_Execution_Loop.png) |
 | The same for OpenAI function calling (Responses API and Chat Completions), mapped onto Claude's | [`docs/openai-tool-use-guide.md`](docs/openai-tool-use-guide.md) |
 | How function calling and MCP differ, with one tool built both ways and the JSON each side sends | [`docs/function-calling-vs-mcp.md`](docs/function-calling-vs-mcp.md) (pairs with week 9) |
+| How MCP messages travel: stdio pipes and JSON-RPC, the problem each one solves, with real captured traffic | [`docs/mcp-under-the-hood.md`](docs/mcp-under-the-hood.md) (read after the one above) |
 | What an agent run looks like on disk, read line by line | [`docs/traces.md`](docs/traces.md) |
 | How an agent decides to launch a subagent | [`docs/subagents.md`](docs/subagents.md) |
 | How the model plans with the todo list, from two real runs | [`docs/todo.md`](docs/todo.md) |

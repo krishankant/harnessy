@@ -326,6 +326,10 @@ This is convenient, but your harness doesn't see the tool calls run, so it can't
 
 ---
 
+**Next:** [`mcp-under-the-hood.md`](mcp-under-the-hood.md) goes one layer down. It covers the stdio pipes and the JSON-RPC rules that carry every message above, and the problem each one solves.
+
+---
+
 ## Sources
 
 - MCP: [specification](https://modelcontextprotocol.io/specification/2026-07-28), [tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools), [Python SDK](https://github.com/modelcontextprotocol/python-sdk)

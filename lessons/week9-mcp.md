@@ -28,6 +28,8 @@ Your harness already speaks "name + description + JSON Schema". This week you te
 
 ## 3. The protocol in one screen
 
+This is the short version. [`docs/mcp-under-the-hood.md`](../docs/mcp-under-the-hood.md) explains why MCP uses stdio and JSON-RPC, the problem each one solves, and a real out-of-order reply caught on the wire.
+
 - **JSON-RPC 2.0.** A request has an `id`, a `method` and `params`. A response has the same `id` and either a `result` or an `error` (`code`, `message`, `data`). A notification has no `id` and gets no answer.
 - **stdio.** The client starts the server as a subprocess. Each message is one line of JSON on the server's stdin or stdout, with no newlines inside a message. The server's stderr is for its logs.
 - **Shutdown.** Close the server's stdin, wait, then terminate, then kill.

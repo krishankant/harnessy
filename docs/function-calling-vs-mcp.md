@@ -7,7 +7,7 @@ People often ask whether MCP replaces function calling. It doesn't. The two work
 
 **Function calling is how the model asks for a tool. MCP is how the tool reaches the app that does the asking.** The model never sees MCP. An MCP tool arrives at the model as an ordinary function-calling tool definition.
 
-This guide builds one small tool, `get_weather`, two ways, and puts the messages each way sends side by side. Read [`claude-tool-use-guide-v2.md`](claude-tool-use-guide-v2.md) (or the [OpenAI version](openai-tool-use-guide.md)) first if `tool_use` and `tool_result` are new to you. [Week 9](../lessons/week9-mcp.md) is where you build the MCP client yourself.
+This guide builds one small tool, `get_weather`, two ways, and puts the messages each way sends side by side. §6 then compares MCP with an ordinary REST API. Read [`claude-tool-use-guide-v2.md`](claude-tool-use-guide-v2.md) (or the [OpenAI version](openai-tool-use-guide.md)) first if `tool_use` and `tool_result` are new to you. [Week 9](../lessons/week9-mcp.md) is where you build the MCP client yourself.
 
 ---
 
@@ -270,7 +270,111 @@ The two ids are worth a second look. `toolu_01A` links the model's request to yo
 
 ---
 
-## 6. A Third Path: the Provider Is the MCP Client
+## 6. MCP vs. a REST API
+
+A natural question at this point: GitHub, Slack and most services already have a REST API (`GET /repos/{owner}/{repo}/pulls`). Why add a new protocol instead of letting agents call those APIs?
+
+MCP is an API too, in the broad sense. The difference is **who it's built for.** A REST API is one service's interface, designed for a developer who reads the docs and writes a client. MCP is **one interface shared by every tool server**, designed for an AI app that has to plug in a server it has never seen.
+
+### The problem it solves: N × M integrations
+
+With REST alone, every agent needs custom code for every service: their URLs, auth, pagination and error formats are all different:
+
+```mermaid
+flowchart LR
+  subgraph Agents
+    A1["Agent A"]
+    A2["Agent B"]
+    A3["IDE assistant"]
+  end
+  subgraph APIs["REST APIs, each shaped differently"]
+    G["GitHub REST"]
+    SL["Slack REST"]
+    DB["Database driver"]
+  end
+  A1 -- "custom client" --> G
+  A1 -- "custom client" --> SL
+  A1 -- "custom client" --> DB
+  A2 -- "custom client" --> G
+  A2 -- "custom client" --> SL
+  A2 -- "custom client" --> DB
+  A3 -- "custom client" --> G
+  A3 -- "custom client" --> SL
+  A3 -- "custom client" --> DB
+```
+
+With 3 agents and 3 services that's **9 integrations**, and every new agent or service adds a whole row or column. With MCP, each agent implements the protocol once, and each service gets one server:
+
+```mermaid
+flowchart LR
+  subgraph Clients["MCP clients"]
+    A1["Agent A"]
+    A2["Agent B"]
+    A3["IDE assistant"]
+  end
+  BUS{{"MCP<br/>tools/list · tools/call"}}
+  subgraph Servers["MCP servers"]
+    G["GitHub server"]
+    SL["Slack server"]
+    DB["Database server"]
+  end
+  A1 --- BUS
+  A2 --- BUS
+  A3 --- BUS
+  BUS --- G
+  BUS --- SL
+  BUS --- DB
+```
+
+That's **3 + 3 = 6** pieces, and the number grows by addition, not multiplication. A USB port works the same way: the laptop doesn't need a different socket for every device.
+
+### MCP sits on top of REST, it doesn't replace it
+
+An MCP server is usually a thin **adapter** around an API that already exists. The GitHub MCP server still calls GitHub's REST API inside:
+
+```mermaid
+flowchart LR
+  M["Model"] -- "function calling<br/>tool_use / tool_result" --> H["Agent / harness<br/>(MCP client)"]
+  H -- "MCP<br/>tools/call review_pull_request" --> S["GitHub MCP server<br/>(adapter)"]
+  S -- "REST<br/>GET /pulls/42/files<br/>POST /pulls/42/reviews" --> API[("GitHub REST API")]
+```
+
+So the stack has three layers, each with its own audience: **function calling** is for the model, **MCP** is for the AI app, and **REST** is for the service.
+
+### Side by side
+
+| | REST API | MCP |
+| :--- | :--- | :--- |
+| **Built for** | A developer writing code against one service | An AI app finding and using tools at run time |
+| **Interface** | Different for every service: URLs, verbs, query params, headers | The same for every server: `tools/list`, `tools/call` |
+| **How a client learns it** | A developer reads the docs (or an OpenAPI file) and writes code | The client calls `tools/list` and gets names, descriptions and schemas |
+| **Descriptions are written for** | Humans | **The model**: a description is the prompt that decides when the tool is used |
+| **Errors** | HTTP status codes and a body each service designs | JSON-RPC errors plus `isError`, one convention everywhere ([details](mcp-under-the-hood.md#12-two-kinds-of-failure)) |
+| **Auth** | Different for every API: keys, OAuth variants, signed requests | None for stdio; one standard OAuth flow for HTTP servers |
+| **Direction** | The client asks, the server answers | **Both ways**: the server can send notifications and requests of its own |
+| **Where it runs** | A web server reachable over the network | Also as a **local child process** over stdio: no port, no network |
+| **What it offers** | Whatever endpoints the service defines | Tools, plus resources (data) and prompts (templates) |
+| **Granularity** | Often hundreds of fine-grained endpoints | A few task-sized tools, chosen so a model can pick well |
+
+### Why MCP wasn't built as "just REST"
+
+1. **The client is a model, which can't read docs or write glue code.** An agent has to understand a server it has never seen, so discovery is built into the protocol: `tools/list` returns exactly what function calling needs. REST has no standard "list your actions" call. OpenAPI comes close, but it's optional, often huge, and written for humans.
+2. **Endpoints are the wrong size for a model.** Reviewing a pull request might take three REST calls, each paginated. Give a model 300 raw endpoints and it chooses badly and fills its context. An MCP server offers a few task-sized tools, such as `review_pull_request`, with descriptions written for a model. Generating tools automatically from OpenAPI is possible, but tends to give poor tool choice for exactly this reason.
+3. **Many tools are local, with no web server to call.** Your files, a git repo, a SQLite database, a browser on your machine. A REST service for each would need a port, a running process and auth. stdio lets the AI app just launch the tool ([`mcp-under-the-hood.md` Part 1](mcp-under-the-hood.md#part-1-stdio-the-transport)).
+4. **Messages need to go both ways.** A server sometimes starts the conversation: "my tool list changed", progress on a long task, "ask the user to confirm" (elicitation), "have your model summarise this" (sampling). JSON-RPC carries requests in either direction. REST would need webhooks or polling.
+5. **One message shape works on every transport.** The same JSON-RPC messages run over a local pipe or remote HTTP. A REST design is tied to HTTP.
+6. **It copies a design that already worked.** The Language Server Protocol solved the same N × M problem for editors and programming languages, using JSON-RPC, stdio and capability discovery. MCP applied that design to AI apps and tools.
+
+### When plain REST is still the right call
+
+- **Ordinary software** (web apps, mobile apps, service-to-service calls) should keep using REST or gRPC. MCP adds nothing there.
+- **HTTP infrastructure** like caches, CDNs, load balancers, gateways and rate limiters is built around REST's verbs and URLs.
+- **One agent, one service:** wrapping the REST call in a plain function tool (Version A, §2) is simpler than running a server.
+- **Trust:** a third-party MCP server's descriptions go straight into your model's context, a risk a REST client doesn't carry in the same way ([week 9 §7](../lessons/week9-mcp.md#7-trust)).
+
+---
+
+## 7. A Third Path: the Provider Is the MCP Client
 
 So far your app has been the MCP client. Some APIs can also act as the client themselves. Claude's Messages API has an MCP connector, and OpenAI's Responses API has a remote-MCP hosted tool ([OpenAI guide §2](openai-tool-use-guide.md#2-where-tools-run-function-tools-vs-hosted-tools)). You pass a server URL in the request, and the provider calls `tools/list` and `tools/call` on its own side.
 
@@ -284,7 +388,7 @@ This is convenient, but your harness doesn't see the tool calls run, so it can't
 
 ---
 
-## 7. When to Use Which
+## 8. When to Use Which
 
 - **Plain function calling:**
   - the tool belongs to this one app and needs the app's state, such as harnessy's `todo` or `subagent` tools;
@@ -294,11 +398,12 @@ This is convenient, but your harness doesn't see the tool calls run, so it can't
   - someone already publishes a server for it (GitHub, a database, a browser);
   - it needs its own process, language, credentials or machine;
   - you want to add tools without changing the app.
+- **A REST API wrapped in a function tool:** one agent needs one service, so a server would only add a process (§6).
 - **Both at once is normal:** harnessy agents mix `@tool` functions and `mcp_tools(...)` in one `tools=[...]` list. Claude Code does the same: its built-in tools are local, and anything from `claude mcp add` comes over MCP ([`claude-code.md`](claude-code.md#week-9-mcp)).
 
 ---
 
-## 8. Cheat Sheet
+## 9. Cheat Sheet
 
 | Question | Answer |
 | :--- | :--- |
@@ -309,10 +414,12 @@ This is convenient, but your harness doesn't see the tool calls run, so it can't
 | What does the app translate? | `inputSchema` → `input_schema`/`parameters`, `tool_use` → `tools/call`, `content[]` → `tool_result`. |
 | Do I need to change the loop to use MCP? | Not if your loop already treats tools generically. Week 9 adds no loop changes. |
 | Can I trust an MCP tool's description? | No more than its author. Descriptions go straight into the model's context. |
+| Isn't MCP just another API? | It's one API shared by every tool server and built for AI apps. A REST API is one service's interface, built for developers. |
+| Does MCP replace REST APIs? | No. An MCP server usually wraps one. MCP turns N × M custom integrations into N + M. |
 
 ---
 
-## 9. Where This Lives in harnessy
+## 10. Where This Lives in harnessy
 
 | Piece | File | Week |
 | :--- | :--- | :--- |

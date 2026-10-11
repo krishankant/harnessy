@@ -4,6 +4,12 @@ Tool use (also known as function calling) allows Claude to connect to external s
 
 This guide breaks down how tool use works, how tools are structured, how Anthropic processes tool calls, and the step-by-step sequence of events, complete with visual flowcharts and sequence diagrams.
 
+### At a Glance
+
+![Claude tool use at a glance: the six-step lifecycle in the centre (user prompt plus tools, Claude chooses a tool, tool_use response, app runs the tool, tool_result returned, final answer), surrounded by six topic cards (fundamentals, where tools run, tool definition, lifecycle, agentic patterns, tool_choice) and three rules to remember](claude-tool-use-infographic.png)
+
+*The whole guide on one page. The cards map onto the sections below: fundamentals (§1), where tools run (§2), tool definition (§4), lifecycle (§3 and §5), agentic patterns (§6) and `tool_choice` (§7). The three rules at the bottom are the ones most beginners break: see the cheat sheet in §8.*
+
 ---
 
 ## 1. What is a Tool? (The Smart Chef Analogy)
@@ -62,6 +68,10 @@ Not all tools run in the same place. Tools fall into three distinct categories b
 ## 3. High-Level Architecture & Flowchart
 
 The interaction between the User, your Application, the Claude API, and External Services follows a structured round-trip loop.
+
+![Claude tool use architecture in four swim lanes (user, your application, Claude API, external service): the user asks, the app sends the prompt and tool schemas, Claude returns stop_reason tool_use, the app executes the tool against the external service, the result goes back to Claude as a tool_result, and Claude's final answer reaches the user](claude-tool-use-architecture.png)
+
+*The four participants and who talks to whom. The drawing takes two shortcuts for space: the external service's data really goes back to **your app**, which sends it to Claude as a `tool_result` (steps 6–7 below), and Claude's final answer also reaches the user **through your app** (steps 9–10). Claude never talks to the external service or the user directly.*
 
 ### Visual Flowchart: The Tool-Use Lifecycle
 
@@ -149,6 +159,10 @@ To give Claude a tool, you define three main parameters inside the `tools` array
 
 Let's walk through a concrete step-by-step scenario where a user asks:  
 *"Schedule a 30-minute meeting with Alice and Bob on Monday at 10am."*
+
+![The tool-use lifecycle as six steps in a row (prompt plus tools, Claude chooses tool, tool_use response, app runs the tool, tool_result returned, final answer), framed by cards on what a tool is, where tools run, the tool definition, agentic patterns, tool_choice controls and the must-follow message rules](claude-tool-use-lifecycle-organizer.png)
+
+*The six circles in the middle are Steps 1–6 below, in order. Keep the red box at the bottom in mind while reading Step 5: it lists the message rules that make the API reject a request when broken.*
 
 ### Step 1: Client Sends Request
 Your application sends the user prompt along with the tool schema to the Messages API:
@@ -286,6 +300,12 @@ If your tool execution encounters a failure (e.g. database timeout or invalid pa
 
 When Claude sees `is_error: true`, it reads the error message and gracefully retries, asks the user for clarification, or offers an alternative solution.
 
+### The Whole Loop as a Decision Tree
+
+![Decision tree for Claude tool use: if no tool is needed Claude answers in plain text; otherwise tool_choice shapes the behaviour, Claude returns tool_use with a name, input and id, the application executes the tool, a failure becomes a tool_result with is_error true, a success becomes a tool_result with the matching tool_use_id, and if no further tool is needed Claude returns the final answer](claude-tool-use-decision-tree.png)
+
+*This puts the while loop, parallel calls and `is_error` together as one flow. Two notes on reading it: `tool_choice` is set by your app in the request **before** Claude decides anything (§7), and the "Another tool needed?" diamond's *yes* branch loops back to "Claude returns tool_use" — that loop is the `while` in the code above. A failed tool goes back to Claude like a successful one, just with `is_error: true`, and the loop continues.*
+
 ### Simplifying with Tool Runner SDK
 Writing manual while loops can be tedious. The Anthropic SDK provides a built-in **Tool Runner** that automates the loop, schema generation, and error handling:
 
@@ -336,6 +356,10 @@ to call a tool.   ONE tool.                     tool.             Generates pros
 ---
 
 ## 8. Summary Cheat Sheet
+
+![Mind map recapping Claude tool use: fundamentals, where tools run, tool definition, the tool-use lifecycle, agentic patterns and usage control (tool_choice), with the message-ordering rules at the bottom](claude-tool-use-mindmap.png)
+
+*A recap of every section as one map. Its numbering follows the topics rather than this guide's sections: 3 is §4, 4 is §5, 5 is §6 and 6 is §7. The table below has the exact field values.*
 
 | Event / Field | Meaning | Standard Value / Format |
 | :--- | :--- | :--- |

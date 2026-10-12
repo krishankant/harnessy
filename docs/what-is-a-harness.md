@@ -4,6 +4,11 @@ Read this first, before week 1. It shows the whole harness you are about to buil
 
 > **In one line:** the model turns text into text. The harness is the program around it that turns that into an *agent*: it keeps calling the model, runs the tools it asks for, decides what it sees, and decides when to stop.
 
+![AI harness engineering at a glance: a model alone turns text into text and can only request an action, while a harness-powered agent keeps calling the model, runs tools, manages context, enforces rules and decides when to stop; the agent loop from task through limits, history-to-view, model and tool calls to an answer; the five plug-in places (model, tools, view, hooks, limits); and the five parts of harness engineering (loop, context, tool design, safety and permissions, observability and evals)](ai-harness-engineering-infographic.png)
+
+*The whole page in one picture. Sections 1 to 3 below walk through it from
+top to bottom.*
+
 ## 1. A model alone can't do anything
 
 Give a model the task "how many lines are in `notes.txt`?" and it can only answer with text. It can't open the file. At best it replies with something like:

@@ -10,6 +10,12 @@ Code 2.1.296. The field names are not a published, stable format, so treat
 them as "what the file looks like today" and expect small changes between
 versions. The OpenTelemetry section is from the documentation only.
 
+![Claude Code traces at a glance: a prompt flows through the harness, the model API, tools and hooks, and every event is appended as one line to session-id.jsonl; below that, where the files live under ~/.claude, how records link together through parentUuid, tool ids and message.id, and six ways to read the trace](claude-code-traces-infographic.png)
+
+*The whole page in one picture. One simplification: `tool-results/` and
+`subagents/` are drawn directly under `<project>/`, but they sit one level
+deeper, in a `<session-id>/` folder next to the `.jsonl` (section 2).*
+
 ## 1. The idea in one picture
 
 Claude Code keeps one append-only file per session. Every prompt, model

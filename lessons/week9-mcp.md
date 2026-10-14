@@ -1,6 +1,11 @@
 # Week 9 (bonus): Tools from anywhere with MCP
 
+**[← Week 8: Capstone](week8-capstone.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Documentation Hub](../docs/README.md)**
+
+---
+
 **Time:** about 5 hours (1 reading, 3 building, 1 trying real servers and taking notes).
+**Companion guides:** [`docs/function-calling-vs-mcp.md`](../docs/function-calling-vs-mcp.md) · [`docs/mcp-under-the-hood.md`](../docs/mcp-under-the-hood.md)
 
 **Before you start:** weeks 2–7 must pass, including their wiring. Week 9 needs no loop changes at all, but it relies on the week 3 registry, the week 6 approval hook and the week 7 trifecta check.
 
@@ -166,3 +171,7 @@ uv run python -m scripts.week9_demo --server "<any stdio MCP server command>"
 1. Run the demo against one real MCP server. Which era did it speak, how many tools did it offer, and how many of their descriptions would you trust a model to read without editing?
 2. Pick one MCP server you'd want in real work. What are its tools' honest trifecta tags, and what approval policy would you give it?
 3. MCP tools went into your agent with no loop changes. Which earlier design decision made that possible?
+
+---
+
+**[← Week 8: Capstone](week8-capstone.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Documentation Hub](../docs/README.md)** · **[Repository Home](../README.md)**

@@ -1,5 +1,9 @@
 # MCP Under the Hood: stdio and JSON-RPC
 
+**[← Docs Hub](README.md)** · **[Function Calling vs. MCP](function-calling-vs-mcp.md)** · **[System Architecture](architecture.md)** · **[Week 9 Lesson](../lessons/week9-mcp.md)**
+
+---
+
 [`function-calling-vs-mcp.md`](function-calling-vs-mcp.md) showed *what* MCP does: a server publishes tools, and your app lists and calls them. This guide covers *how* the messages actually get from one program to the other. Two standard pieces do that work:
 
 - **stdio** is the **transport**. It is the pipe between your app and the server.

@@ -1,6 +1,11 @@
 # Week 7: Production concerns
 
+**[← Week 6: Control Flow](week6-control-flow.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 8: Capstone →](week8-capstone.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/trifecta.md`](../docs/trifecta.md) · [`docs/sandbox.md`](../docs/sandbox.md) · [`docs/failures.md`](../docs/failures.md) (Failures #7, #8)
 
 **Before you start:** weeks 2–6 must pass, including their wiring (`uv run pytest tests/week2 tests/week3 tests/week4 tests/week5 tests/week6`).
 
@@ -393,3 +398,7 @@ Watch for four things:
 1. List the tools you'd give a real agent at work, tag each one, and say whether the set is the lethal trifecta. If it is, which leg would you remove, or which tool would you guard?
 2. Your `max_cost_usd` run overshot the limit. By how much? What would it take to stop *during* a call instead, and is it worth it?
 3. Which of today's failures (429, hang, runaway cost, injection) would have hurt most in something you've built before, and how did you handle it then?
+
+---
+
+**[← Week 6: Control Flow](week6-control-flow.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 8 — Capstone →](week8-capstone.md)**

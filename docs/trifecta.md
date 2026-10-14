@@ -1,5 +1,9 @@
 # The lethal trifecta: keeping an agent from leaking your data
 
+**[← Docs Hub](README.md)** · **[Sandbox](sandbox.md)** · **[Hooks](hooks.md)** · **[Failure Gallery](failures.md)** · **[Week 7 Lesson](../lessons/week7-production.md)**
+
+---
+
 Week 7 adds `check_trifecta`, which refuses to build certain agents. This page explains why:
 - what the lethal trifecta is;
 - how an attack works, step by step;

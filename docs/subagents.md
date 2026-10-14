@@ -1,5 +1,9 @@
 # Subagents: who decides, and how
 
+**[← Docs Hub](README.md)** · **[Hooks](hooks.md)** · **[Todo List](todo.md)** · **[Skills](skills.md)** · **[Week 6 Lesson](../lessons/week6-control-flow.md)**
+
+---
+
 Week 6 adds `spawn_subagent`. This page explains how an agent ends up launching one, which levers you have over that choice, and six ways to use it.
 
 > **In one line:** the **model** decides to delegate, the same way it decides to call any tool. The **harness** decides whether the tool exists, what the helper may do, and whether a delegation may run.

@@ -1,5 +1,9 @@
 # What is a harness?
 
+**[← Docs Hub](README.md)** · **[Repository Home](../README.md)** · **[Failure Gallery](failures.md)** · **[System Architecture](architecture.md)** · **[8-Week Learning Plan](../LEARNING_PLAN.md)**
+
+---
+
 Read this first, before week 1. It shows the whole harness you are about to build on one screen, with each line marked by the week that adds it. The weeks then fill in one piece at a time.
 
 > **In one line:** the model turns text into text. The harness is the program around it that turns that into an *agent*: it keeps calling the model, runs the tools it asks for, decides what it sees, and decides when to stop.
@@ -178,13 +182,20 @@ Two rules follow, and the rest of the course keeps coming back to them:
 
 You will hear both terms. *Loop engineering* is one part of *harness engineering*: the work of deciding how the cycle runs, what gets fed back into it, and when it ends. In the picture above, it owns the limits and the stop and feedback hooks. The rest of the harness decides what the model sees, what it can do and what it is allowed to do.
 
-```
-harness engineering
-├── loop engineering      how the cycle runs, gets feedback, and stops    (weeks 2, 6)
-├── context engineering   what the model sees on each turn                (week 4)
-├── tool design           what the model can do                           (week 3)
-├── safety / permissions  what it is allowed to do                        (weeks 6–7)
-└── observability / evals what happened, and whether it got better        (week 5)
+```mermaid
+flowchart LR
+  HE["<b>Harness Engineering</b>"] --> LE["<b>Loop Engineering (Wks 2, 6)</b><br/>How the cycle runs, gets feedback, and stops"]
+  HE --> CE["<b>Context Engineering (Wk 4)</b><br/>What the model sees on each turn"]
+  HE --> TD["<b>Tool Design (Wks 3, 9)</b><br/>What actions the model can request"]
+  HE --> SP["<b>Safety & Permissions (Wks 6–7)</b><br/>What the agent is allowed to execute"]
+  HE --> OE["<b>Observability & Evals (Wks 5, 8)</b><br/>What happened & whether it improved"]
+
+  style HE fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style LE fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style CE fill:#fff6e0,stroke:#d19a1c,color:#1b2230
+  style TD fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style SP fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  style OE fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
 ```
 
 The term covers two loops:

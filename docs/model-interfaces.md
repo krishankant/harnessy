@@ -1,5 +1,9 @@
 # Model interfaces: OpenAI vs Anthropic
 
+**[← Docs Hub](README.md)** · **[Claude Tool Use Guide](claude-tool-use-guide-v2.md)** · **[OpenAI Tool Use Guide](openai-tool-use-guide.md)** · **[System Architecture](architecture.md)** · **[Week 1 Lesson](../lessons/week1-model-interface.md)**
+
+---
+
 Week 1 asks you to read the Claude and OpenAI tool-use docs side by side and write down every place they differ. This page is that list, written out. It covers three wire formats:
 
 - **Anthropic Messages API** (`POST /v1/messages`). harnessy's `AnthropicModel` uses it.
@@ -9,6 +13,35 @@ Week 1 asks you to read the Claude and OpenAI tool-use docs side by side and wri
 A short Gemini note is at the end.
 
 The examples are raw JSON, as it goes over the wire. The SDKs wrap these shapes, but they don't change them.
+
+```mermaid
+flowchart LR
+  subgraph HARNESS["harnessy Core (Provider-Neutral)"]
+    LOOP["Agent.run / ContextManager"]
+    TYPES["types.py<br/>Message · ToolSpec · ToolCall<br/>ToolResult · ModelResponse · StopReason"]
+    LOOP <--> TYPES
+  end
+
+  subgraph ADAPTERS["models/ Adapter Layer (Week 1)"]
+    ANT["AnthropicModel<br/>to_anthropic_* / from_anthropic_*"]
+    OAI["OpenAIModel<br/>to_openai_* / from_openai_*"]
+    RESP["Responses Adapter (Future)<br/>input items / function_call_output"]
+  end
+
+  subgraph WIRE["Provider Wire Formats"]
+    W_ANT["<b>Anthropic Messages API</b><br/>POST /v1/messages<br/>content blocks: text, thinking,<br/>tool_use, tool_result"]
+    W_CHAT["<b>OpenAI Chat Completions & Ollama</b><br/>POST /v1/chat/completions<br/>assistant.tool_calls + role:'tool' msgs"]
+    W_RESP["<b>OpenAI Responses API</b><br/>POST /v1/responses<br/>typed items: reasoning, function_call,<br/>function_call_output"]
+  end
+
+  TYPES <--> ANT <--> W_ANT
+  TYPES <--> OAI <--> W_CHAT
+  TYPES <-.-> RESP <-.-> W_RESP
+
+  style HARNESS fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style ADAPTERS fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style WIRE fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+```
 
 ## 1. The differences at a glance
 

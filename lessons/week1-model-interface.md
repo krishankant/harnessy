@@ -1,6 +1,11 @@
 # Week 1: One interface for every model
 
+**[← Learning Plan](../LEARNING_PLAN.md)** · **[What is a Harness?](../docs/what-is-a-harness.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 2: The Agent Loop →](week2-agent-loop.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/model-interfaces.md`](../docs/model-interfaces.md) · [`docs/claude-tool-use-guide-v2.md`](../docs/claude-tool-use-guide-v2.md) · [`docs/openai-tool-use-guide.md`](../docs/openai-tool-use-guide.md)
 
 **You're done when:**
 
@@ -217,3 +222,7 @@ The script stops the conversation by hand after two turns. Next week you replace
 1. Which difference between the two APIs surprised you most, and where would it have leaked into your loop without the adapter?
 2. `from_openai_response` turns invalid JSON into `{"_raw": ...}` instead of raising. What will the loop do with that next week, and why is that better than an exception?
 3. If a third provider arrived tomorrow, which files would change? (The answer should be: one new file.)
+
+---
+
+**[← 8-Week Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 2 — The Agent Loop →](week2-agent-loop.md)**

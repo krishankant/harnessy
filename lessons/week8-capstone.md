@@ -1,6 +1,11 @@
 # Week 8: Capstone — prove it's generic
 
+**[← Week 7: Production Concerns](week7-production.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 9 (Bonus): MCP →](week9-mcp.md)**
+
+---
+
 **Time:** about 5 hours (1 building, 1.5 running and reading traces, 1.5 comparing, 1 writing up).
+**Companion guides:** [`docs/architecture.md`](../docs/architecture.md) · [`docs/claude-code.md`](../docs/claude-code.md) · [`docs/trifecta.md`](../docs/trifecta.md)
 
 **Before you start:** weeks 2–7 must pass, including all the wiring (`uv run pytest tests/week2 tests/week3 tests/week4 tests/week5 tests/week6 tests/week7`).
 
@@ -294,3 +299,7 @@ Spend about an hour on each. For every part of your architecture, write down how
 - `diff -r harnessy/agents solutions/harnessy/agents`
 
 That's the course. You built a model interface, a loop, tools, context management, traces, evals, hooks, approvals, subagents, retries, streaming, cost limits, a sandbox and a safety check. Then you proved it's generic by running three very different agents on it unchanged.
+
+---
+
+**[← Week 7: Production Concerns](week7-production.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 9 (Bonus) — Tools from Anywhere with MCP →](week9-mcp.md)**

@@ -1,5 +1,9 @@
 # Reading real traces
 
+**[← Docs Hub](README.md)** · **[Claude Code Traces](claude-code-traces.md)** · **[System Architecture](architecture.md)** · **[Week 5 Lesson](../lessons/week5-traces-and-evals.md)**
+
+---
+
 Week 5 teaches the trace format. This page reads three real traces, line by line, so you can see what an agent run actually looks like on disk and follow its logic from the first event to the last.
 
 They come from an eval run on Claude Opus 5 (`evals/results/traces/20260928T031056Z-anthropic/`, trial 1 of tasks e01, e02 and e03). All three passed. They're short on purpose. Short traces are where you learn the shape, so long ones become readable later.
@@ -32,6 +36,20 @@ run_start                       what the agent was given
   model_call   (step 1)
   ...
 stop                            why it ended, and the totals
+```
+
+```mermaid
+flowchart LR
+  E0["<b>seq 0 · run_start</b><br/>t = 0.000s<br/>task, model, system, tools"] -->|"Δt = model latency"| E1["<b>seq 1 · model_call (step 0)</b><br/>t = 1.651s<br/>stop_reason: tool_use<br/>tool_calls: [{id: toolu_01...}]"]
+  E1 -->|"Δt = tool execution"| E2["<b>seq 2 · tool_result (step 0)</b><br/>t = 1.652s<br/>tool_call_id: toolu_01...<br/>content, is_error"]
+  E2 -->|"Δt = model latency"| E3["<b>seq 3 · model_call (step 1)</b><br/>t = 3.093s<br/>stop_reason: end_turn<br/>text: '4'"]
+  E3 -->|"Δt ≈ 0s"| E4["<b>seq 4 · stop</b><br/>t = 3.093s<br/>stop_reason, steps, tokens, final_text"]
+
+  style E0 fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style E1 fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style E2 fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style E3 fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style E4 fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
 ```
 
 A `model_call` and the `tool_result` lines after it share a `step` number. Each tool call is linked to its result by id: `tool_calls[].id` in the `model_call` and `tool_call_id` in the `tool_result`.

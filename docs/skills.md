@@ -1,5 +1,9 @@
 # Skills: instructions the agent loads when it needs them
 
+**[← Docs Hub](README.md)** · **[What is a Harness?](what-is-a-harness.md)** · **[Subagents](subagents.md)** · **[Hooks](hooks.md)** · **[Claude Code Overview](claude-code.md)**
+
+---
+
 Claude Code has *skills*: folders of instructions that the agent loads only when a task needs them. Harnessy doesn't have skills, and this page doesn't add them. It explains how they work, then shows that every part of a skill fits into a plug-in point you have already built. **The loop doesn't change.**
 
 > **In one line:** a skill is a description that the model can always see, plus a body it loads by calling a tool. The **model** decides when a skill is relevant. The **harness** decides which skills exist, keeps the loaded instructions in view, and enforces any rules the skill declares.

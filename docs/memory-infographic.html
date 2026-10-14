@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent memory at a glance</title>
+<!-- Source for memory-infographic.png. Open in a browser, or re-render with headless Chrome at 1200px wide. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #10203a;
+    --soft: #4a5a78;
+    --paper: #f3f6fb;
+    --panel: #ffffff;
+    --line: #d3dbea;
+    --working: #2456d6;
+    --working-bg: #e6edfc;
+    --episodic: #a8690a;
+    --episodic-bg: #fbf0d9;
+    --semantic: #0a7d70;
+    --semantic-bg: #dff3ef;
+    --procedural: #6541c4;
+    --procedural-bg: #ece6fa;
+    --risk: #bf3725;
+    --risk-bg: #fbe9e5;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    width: 1200px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+    font-size: 19px;
+    line-height: 1.35;
+    padding: 44px 44px 36px;
+  }
+  h1, h2, h3, .display { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+  code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; font-weight: 500; }
+
+  header { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; }
+  h1 { font-size: 118px; font-weight: 800; line-height: 0.9; letter-spacing: -0.035em; }
+  .lede { font-size: 27px; line-height: 1.25; max-width: 760px; margin-top: 18px; font-weight: 700; }
+  .lede span { font-weight: 400; color: var(--soft); }
+  .tag { font-size: 17px; color: var(--soft); text-align: right; line-height: 1.3; padding-bottom: 6px; }
+
+  section { margin-top: 30px; }
+  h2 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+  h2 small { display: block; font-family: "Atkinson Hyperlegible", sans-serif; font-size: 19px; font-weight: 400; color: var(--soft); letter-spacing: 0; margin-top: 6px; }
+
+  .map { background: var(--panel); border: 1.5px solid var(--line); border-radius: 18px; padding: 10px 14px 6px; margin-top: 26px; }
+  .map svg { display: block; width: 100%; height: auto; }
+  .map svg { fill: var(--ink); }
+  .map text { font-family: "Atkinson Hyperlegible", sans-serif; }
+  .map .d { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; }
+  .map .m { font-family: "JetBrains Mono", monospace; font-weight: 500; }
+
+  .kinds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+  .kind { background: var(--panel); border-radius: 14px; padding: 16px 16px 14px; border-top: 9px solid var(--c); }
+  .kind h3 { font-size: 29px; font-weight: 800; color: var(--c); letter-spacing: -0.02em; line-height: 1; }
+  .kind .q { font-size: 20px; font-weight: 700; margin: 6px 0 12px; }
+  .kind dl { display: grid; gap: 9px; font-size: 17px; }
+  .kind dt { color: var(--soft); font-size: 15px; }
+  .kind dd { margin: 0; }
+  .w { --c: var(--working); } .e { --c: var(--episodic); } .s { --c: var(--semantic); } .p { --c: var(--procedural); }
+
+  .two { display: grid; grid-template-columns: 1.08fr 1fr; gap: 18px; }
+  .card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 18px; padding: 22px 22px 20px; }
+
+  .ladder { list-style: none; padding: 0; margin-top: 16px; display: grid; gap: 7px; }
+  .ladder li { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: center; background: var(--working-bg); border-radius: 10px; padding: 9px 12px; font-size: 17.5px; }
+  .ladder li:nth-child(2) { margin-left: 16px; } .ladder li:nth-child(3) { margin-left: 32px; }
+  .ladder li:nth-child(4) { margin-left: 48px; } .ladder li:nth-child(5) { margin-left: 64px; }
+  .ladder b { display: block; font-size: 19px; }
+  .n { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 26px; color: #fff; background: var(--working); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; }
+  .scale { display: flex; justify-content: space-between; font-size: 15px; color: var(--soft); margin-top: 8px; }
+
+  .chart { margin-top: 16px; border-top: 1.5px solid var(--line); padding-top: 14px; display: grid; grid-template-columns: 250px 1fr; gap: 16px; align-items: center; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .chart p { font-size: 16.5px; }
+  .chart .key { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .chart .sw { width: 22px; height: 5px; border-radius: 3px; flex: none; }
+
+  .decisions { display: grid; gap: 10px; margin-top: 16px; }
+  .dec { display: grid; grid-template-columns: 148px 1fr; gap: 14px; padding: 12px 0; border-top: 1.5px solid var(--line); }
+  .dec:first-child { border-top: 0; padding-top: 0; }
+  .dec h3 { font-size: 22px; font-weight: 800; line-height: 1.1; }
+  .dec p { font-size: 17px; }
+  .dec p + p { margin-top: 5px; color: var(--soft); }
+
+  .wild { margin-top: 14px; background: var(--paper); border-radius: 12px; padding: 14px 16px; font-size: 16.5px; display: grid; gap: 8px; }
+  .wild h3 { font-size: 20px; font-weight: 800; }
+  .wrong { background: var(--risk-bg); border-radius: 18px; padding: 22px; }
+  .wrong h2 { color: var(--risk); }
+  .wrong h2 small { color: var(--ink); }
+  .pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .pain { background: var(--panel); border-radius: 12px; padding: 13px 14px; font-size: 16.5px; }
+  .pain h3 { font-size: 20px; font-weight: 800; color: var(--risk); line-height: 1.1; margin-bottom: 5px; }
+  .pain .fix { margin-top: 7px; padding-top: 7px; border-top: 1.5px dashed #e3b7ae; font-weight: 700; }
+
+  .order { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 16px; }
+  .step { position: relative; background: var(--panel); border: 1.5px solid var(--line); border-right: 0; padding: 13px 14px 13px 24px; font-size: 16.5px; min-height: 108px; }
+  .step:first-child { border-radius: 14px 0 0 14px; padding-left: 16px; }
+  .step:last-child { border-right: 1.5px solid var(--line); border-radius: 0 14px 14px 0; }
+  .step b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 19px; font-weight: 800; line-height: 1.1; margin-bottom: 5px; }
+  .step:not(:last-child)::after { content: ""; position: absolute; right: -11px; top: 50%; width: 20px; height: 20px; background: var(--panel); border-top: 1.5px solid var(--line); border-right: 1.5px solid var(--line); transform: translateY(-50%) rotate(45deg); z-index: 1; }
+  .stop { margin-top: 12px; font-size: 19px; font-weight: 700; }
+  footer { margin-top: 22px; font-size: 15.5px; color: var(--soft); display: flex; justify-content: space-between; gap: 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Agent memory</h1>
+    <p class="lede">The model remembers nothing between calls. <span>Memory is what you write down, where you keep it, and how you get it back into the window.</span></p>
+  </div>
+  <p class="tag">harnessy, week 4<br>docs/memory.md</p>
+</header>
+
+<div class="map">
+<svg viewBox="0 0 1110 392" role="img" aria-label="Three long-term stores, procedural, semantic and episodic, read into and written from one context window, which is all the model sees">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#10203a"/></marker>
+  </defs>
+
+  <text x="8" y="28" font-size="17" fill="#4a5a78">Outside the window: survives the run</text>
+  <text x="520" y="28" font-size="17" fill="#4a5a78">The context window: all the model can see</text>
+
+  <!-- stores -->
+  <g>
+    <rect x="8" y="44" width="330" height="96" rx="14" fill="#ece6fa" stroke="#6541c4" stroke-width="2.5"/>
+    <text x="26" y="80" class="d" font-size="27" fill="#6541c4">Procedural</text>
+    <text x="26" y="105" font-size="17">How to act</text>
+    <text x="26" y="126" font-size="15.5" fill="#4a5a78">System prompt, skills, tool specs</text>
+
+    <rect x="8" y="156" width="330" height="96" rx="14" fill="#dff3ef" stroke="#0a7d70" stroke-width="2.5"/>
+    <text x="26" y="192" class="d" font-size="27" fill="#0a7d70">Semantic</text>
+    <text x="26" y="217" font-size="17">What is true</text>
+    <text x="26" y="238" font-size="15.5" fill="#4a5a78">Facts about the user and the project</text>
+
+    <rect x="8" y="268" width="330" height="96" rx="14" fill="#fbf0d9" stroke="#a8690a" stroke-width="2.5"/>
+    <text x="26" y="304" class="d" font-size="27" fill="#a8690a">Episodic</text>
+    <text x="26" y="329" font-size="17">What happened</text>
+    <text x="26" y="350" font-size="15.5" fill="#4a5a78">Traces, one summary line per run</text>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#10203a" stroke-width="2.5" fill="none">
+    <path d="M338 92 H512" marker-end="url(#a)"/>
+    <path d="M338 204 H512" marker-end="url(#a)" marker-start="url(#a)"/>
+    <path d="M338 316 H512" marker-end="url(#a)" marker-start="url(#a)"/>
+    <path d="M880 204 H952" marker-end="url(#a)" marker-start="url(#a)"/>
+  </g>
+  <g font-size="15">
+    <text x="425" y="82" text-anchor="middle">read at the start</text>
+    <text x="425" y="112" text-anchor="middle" fill="#4a5a78">a person writes it</text>
+    <text x="425" y="194" text-anchor="middle" class="m" font-size="14">recall(query)</text>
+    <text x="425" y="224" text-anchor="middle" class="m" font-size="14">remember(key, text)</text>
+    <text x="425" y="306" text-anchor="middle">recent runs</text>
+    <text x="425" y="336" text-anchor="middle">log the run</text>
+  </g>
+
+  <!-- window -->
+  <rect x="520" y="44" width="360" height="320" rx="14" fill="#e6edfc" stroke="#2456d6" stroke-width="2.5"/>
+  <text x="540" y="80" class="d" font-size="27" fill="#2456d6">Working memory</text>
+  <text x="540" y="104" font-size="16">Short-term. Gone when the run ends.</text>
+  <g font-size="16">
+    <rect x="540" y="120" width="320" height="34" rx="6" fill="#fff"/><text x="552" y="143">System prompt and tool specs</text>
+    <rect x="540" y="160" width="320" height="34" rx="6" fill="#fff"/><text x="552" y="183">The task</text>
+    <rect x="540" y="200" width="320" height="34" rx="6" fill="#fff"/><text x="552" y="223">Earlier turns</text>
+    <rect x="540" y="240" width="320" height="72" rx="6" fill="#2456d6"/>
+    <text x="552" y="270" fill="#fff" font-weight="700">Tool results</text>
+    <text x="552" y="294" fill="#fff" font-size="15">These fill the window fastest</text>
+  </g>
+  <text x="540" y="342" font-size="15.5" fill="#4a5a78">Every call sends all of it again.</text>
+
+  <!-- model -->
+  <rect x="960" y="150" width="142" height="108" rx="54" fill="#10203a"/>
+  <text x="1031" y="200" text-anchor="middle" class="d" font-size="25" fill="#fff">Model</text>
+  <text x="1031" y="224" text-anchor="middle" font-size="14.5" fill="#c9d3e6">stateless</text>
+  <text x="916" y="192" text-anchor="middle" font-size="14">one call</text>
+  <text x="916" y="228" text-anchor="middle" font-size="14">one reply</text>
+</svg>
+</div>
+
+<div class="kinds">
+  <div class="kind w">
+    <h3>Working</h3><p class="q">What am I doing now?</p>
+    <dl>
+      <div><dt>Lives for</dt><dd>One run</dd></div>
+      <div><dt>In harnessy</dt><dd>The message history, and the view <code>ContextManager</code> builds from it</dd></div>
+    </dl>
+  </div>
+  <div class="kind e">
+    <h3>Episodic</h3><p class="q">What happened before?</p>
+    <dl>
+      <div><dt>Lives for</dt><dd>Many runs</dd></div>
+      <div><dt>In harnessy</dt><dd>The week 5 trace file. Written, but never read back</dd></div>
+    </dl>
+  </div>
+  <div class="kind s">
+    <h3>Semantic</h3><p class="q">What is true?</p>
+    <dl>
+      <div><dt>Lives for</dt><dd>Many runs</dd></div>
+      <div><dt>In harnessy</dt><dd><code>MemoryStore</code>, through <code>remember</code> and <code>recall</code></dd></div>
+    </dl>
+  </div>
+  <div class="kind p">
+    <h3>Procedural</h3><p class="q">How should I act?</p>
+    <dl>
+      <div><dt>Lives for</dt><dd>Until someone edits it</dd></div>
+      <div><dt>In harnessy</dt><dd><code>Agent.system</code>, tool specs, skills. The riskiest one to let an agent write</dd></div>
+    </dl>
+  </div>
+</div>
+
+<section class="two">
+  <div class="card">
+    <h2>Short-term: a small window<small>Quality drops before the window is full. Five fixes, cheapest first.</small></h2>
+    <ol class="ladder">
+      <li><span class="n">1</span><span><b>Load just in time</b>Keep a path or a query, fetch the content with a tool</span></li>
+      <li><span class="n">2</span><span><b>Clear old tool results</b>Swap them for one-line stubs. No model call</span></li>
+      <li><span class="n">3</span><span><b>Compact</b>Summarize the oldest turns. One model call, some loss</span></li>
+      <li><span class="n">4</span><span><b>Keep notes on disk</b>A todo list or progress file, re-read later</span></li>
+      <li><span class="n">5</span><span><b>Hand it to a subagent</b>It reads in its own window and returns a short answer</span></li>
+    </ol>
+    <div class="chart">
+      <svg viewBox="0 0 250 150" role="img" aria-label="Input tokens per step: 671 rising to 11,931 without a context manager, 671 levelling near 3,600 with one">
+        <line x1="34" y1="8" x2="34" y2="126" stroke="#d3dbea" stroke-width="1.5"/>
+        <line x1="34" y1="126" x2="244" y2="126" stroke="#d3dbea" stroke-width="1.5"/>
+        <text x="30" y="16" font-size="11" text-anchor="end" fill="#4a5a78" font-family="Atkinson Hyperlegible">12k</text>
+        <text x="30" y="129" font-size="11" text-anchor="end" fill="#4a5a78" font-family="Atkinson Hyperlegible">0</text>
+        <text x="139" y="145" font-size="11" text-anchor="middle" fill="#4a5a78" font-family="Atkinson Hyperlegible">steps 1 to 5</text>
+        <!-- y = 126 - tokens/12000*118 ; x = 40 + (step-1)*50 -->
+        <polyline points="40,119.4 90,91.8 140,64.3 190,36.6 240,8.7" fill="none" stroke="#bf3725" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="40,119.4 90,104.6 140,87.0 190,90.1 240,90.6" fill="none" stroke="#2456d6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <p class="key"><span class="sw" style="background:#bf3725"></span>No context manager: 671 to 11,931 input tokens</p>
+        <p class="key"><span class="sw" style="background:#2456d6"></span>With one: levels off near 3,600</p>
+        <p style="color:var(--soft);margin-top:7px">Bounded, not cheaper. The managed run re-read files it had cleared and used more tokens in total.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Long-term: four decisions<small>The store is the least interesting one.</small></h2>
+    <div class="decisions">
+      <div class="dec"><h3>Who writes, and when</h3><div><p>The agent mid-task, or a background job after the run.</p><p>Mid-task is instant but easy to forget. Background adds no delay but lags.</p></div></div>
+      <div class="dec"><h3>What shape</h3><div><p>One profile, many small facts, or a graph of dated relations.</p><p>One fact per record, as a full sentence.</p></div></div>
+      <div class="dec"><h3>How it gets back in</h3><div><p>A small index that is always loaded, plus bodies fetched on demand.</p><p>A memory that is not in the window does not exist.</p></div></div>
+      <div class="dec"><h3>How it stays correct</h3><div><p>Update in place. Put a date and a source on every memory. Check it on read. Expire and delete.</p><p>Most systems skip this one.</p></div></div>
+    </div>
+    <div class="wild">
+      <h3>How shipped systems answer them</h3>
+      <p><b>Claude Code</b> keeps two stores: you write <code>CLAUDE.md</code>, Claude writes auto memory. Only the first 200 lines of its index load at the start.</p>
+      <p><b>Letta</b> pairs each agent with a second one that rewrites memory while the first is idle.</p>
+      <p><b>Zep</b> never deletes a contradicted fact. It marks the date it stopped being true.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrong">
+  <h2>What goes wrong in production<small>Each one, and the fix that helps most.</small></h2>
+  <div class="pains">
+    <div class="pain"><h3>Stale memory</h3>The agent confidently uses last quarter's fact.<p class="fix">Update in place, date it, verify on read</p></div>
+    <div class="pain"><h3>Memory poisoning</h3>A web page tells the agent to save something. It replays in every later run.<p class="fix">No memory writes after untrusted input</p></div>
+    <div class="pain"><h3>Compaction loss</h3>The summary drops the one detail that mattered.<p class="fix">Keep critical state in a notes file</p></div>
+    <div class="pain"><h3>Never recalled</h3>The memory exists and the agent never looks.<p class="fix">A small always-loaded index</p></div>
+    <div class="pain"><h3>Cross-user leaks</h3>One user sees what another said.<p class="fix">Scopes enforced in code, not in the prompt</p></div>
+    <div class="pain"><h3>Broken prompt cache</h3>Recalled text changes the start of the prompt, and the bill goes up.<p class="fix">Load memory once, before the run</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Build it in this order</h2>
+  <div class="order">
+    <div class="step"><b>Fix short-term first</b>Clear old results, then compact</div>
+    <div class="step"><b>Facts in files</b>Semantic memory with a small index</div>
+    <div class="step"><b>One line per run</b>Episodic summaries</div>
+    <div class="step"><b>Search</b>Keywords, then embeddings, measured by evals</div>
+    <div class="step"><b>Scopes and a write gate</b>Before more than one user, or any untrusted input</div>
+  </div>
+  <p class="stop">Every step adds a store someone has to keep correct. Stop at the first one you don't need.</p>
+</section>
+
+<footer>
+  <span>Taxonomy from CoALA (Sumers et al., 2023). Token numbers from the week 4 demo.</span>
+  <span>Full guide: docs/memory.md</span>
+</footer>
+
+</body>
+</html>

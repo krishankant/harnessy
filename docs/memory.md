@@ -1,8 +1,16 @@
 # Memory: what an agent remembers, and where it lives
 
+**[← Docs Hub](README.md)** · **[System Architecture](architecture.md)** · **[Skills](skills.md)** · **[Todo List](todo.md)** · **[Week 4 Lesson](../lessons/week4-context-and-memory.md)**
+
+---
+
 Week 4 builds two things: a `ContextManager` that decides what the model sees, and a `MemoryStore` that keeps facts between runs. This page puts both on one map. It names the kinds of memory an agent can have (short-term, long-term, episodic, semantic, procedural), shows which harnessy module is which, describes how production systems build each one, and lists what goes wrong when they do. It ends with three small extensions to harnessy, each run against `ScriptedModel`.
 
 > **In one line:** the model remembers nothing between calls. Every kind of "memory" is a decision about **what to write down**, **where to keep it**, and **how to get it back into the context window**.
+
+![Agent memory at a glance: three long-term stores (procedural, semantic, episodic) read into and written from one context window, which is all the stateless model sees; the four kinds of memory and where each lives in harnessy; five ways to keep the window small, cheapest first, with the week 4 token numbers; the four decisions behind long-term memory; six things that go wrong in production with the fix for each; and the order to build it in](memory-infographic.png)
+
+*The source is [memory-infographic.html](memory-infographic.html).*
 
 Read [lessons/week4-context-and-memory.md](../lessons/week4-context-and-memory.md) first if you haven't. This page starts where it stops.
 

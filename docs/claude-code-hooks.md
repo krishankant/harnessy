@@ -1,5 +1,9 @@
 # Claude Code hooks: the same idea, across a process boundary
 
+**[← Docs Hub](README.md)** · **[harnessy Hooks](hooks.md)** · **[OpenAI Hooks](openai-hooks.md)** · **[Claude Code Overview](claude-code.md)** · **[Week 6 Lesson](../lessons/week6-control-flow.md)**
+
+---
+
 [`hooks.md`](hooks.md) shows hooks as you build them in week 6: Python classes the loop calls. This page shows the same idea in a harness you use every day. It covers what a Claude Code hook is, where the events fire, how a hook answers, how several hooks combine, and the six harnessy hooks rewritten as Claude Code hooks.
 
 > **In one line:** a Claude Code hook is a **separate program** that Claude Code starts at a fixed point in a session. It reads one JSON object on stdin and answers with an exit code and, optionally, JSON on stdout.

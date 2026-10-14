@@ -1,6 +1,11 @@
 # Week 6: Control flow: hooks, approvals, subagents, planning
 
+**[← Week 5: Traces and Evals](week5-traces-and-evals.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 7: Production Concerns →](week7-production.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/hooks.md`](../docs/hooks.md) · [`docs/subagents.md`](../docs/subagents.md) · [`docs/todo.md`](../docs/todo.md) · [`docs/skills.md`](../docs/skills.md) · [`docs/claude-code-hooks.md`](../docs/claude-code-hooks.md) · [`docs/openai-hooks.md`](../docs/openai-hooks.md)
 
 **Before you start:** weeks 2–5 must pass, including the week 5 tracer wiring (`uv run pytest tests/week2 tests/week3 tests/week4 tests/week5`). This week you rework that wiring.
 
@@ -369,3 +374,7 @@ In part 2, compare the parent's token count with what the helpers must have spen
 1. What did the model do when you declined the write? Was that what you wanted, and what would you change in the refusal message?
 2. In the subagent demo, `RunResult.usage` shows only the parent's tokens: each helper is a separate run whose usage never reaches it. Why is that a problem for a cost limit, and how would you pass the helpers' usage up? (Week 7 adds the cost meter.)
 3. Name one rule from your own work that you'd enforce with a `before_tool` hook instead of a line in the system prompt.
+
+---
+
+**[← Week 5: Traces and Evals](week5-traces-and-evals.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 7 — Production Concerns →](week7-production.md)**

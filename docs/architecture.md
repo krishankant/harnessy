@@ -1,5 +1,9 @@
 # harnessy architecture
 
+**[← Docs Hub](README.md)** · **[Repository Home](../README.md)** · **[What is a Harness?](what-is-a-harness.md)** · **[Failure Gallery](failures.md)** · **[8-Week Learning Plan](../LEARNING_PLAN.md)**
+
+---
+
 Diagrams of the harness as built on `main`, drawn from the lessons in `lessons/` (weeks 1–8 plus the bonus week 9) and the reference code in `solutions/harnessy/`. Each figure names the files and lesson sections it comes from. Figures 1–14 are also published as a page: [harnessy Blueprints](https://claude.ai/artifact/SFopAuFpMFRJfYdFePJi5B) (private to the owner unless shared).
 
 **Interactive overview.** [`architecture-archify.html`](architecture-archify.html) is one interactive diagram of the whole harness: the loop, context, hooks, tracing and evals, tools and MCP. It has guided views, search, zoom and light/dark themes. GitHub shows it as source, so clone the repo and open the file in a browser. It's generated with [Archify](https://github.com/tt-a1i/archify) from [`architecture.archify.json`](architecture.archify.json); edit the JSON and re-render, never the HTML.

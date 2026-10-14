@@ -1,5 +1,9 @@
 # Traces in Claude Code: the session JSONL and how to read it
 
+**[← Docs Hub](README.md)** · **[harnessy Traces](traces.md)** · **[Claude Code Overview](claude-code.md)** · **[Claude Code Hooks](claude-code-hooks.md)** · **[Week 5 Lesson](../lessons/week5-traces-and-evals.md)**
+
+---
+
 [`traces.md`](traces.md) shows how harnessy writes its own trace. This page
 shows the same idea in Claude Code: what it records, where the file lives,
 how the lines link together, and how to read them with `jq` and a few lines

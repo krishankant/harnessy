@@ -1,5 +1,9 @@
 # A gallery of failures
 
+**[← Docs Hub](README.md)** · **[What is a Harness?](what-is-a-harness.md)** · **[System Architecture](architecture.md)** · **[8-Week Learning Plan](../LEARNING_PLAN.md)**
+
+---
+
 Every part of the harness exists because an agent goes wrong without it. This page shows eight ways it goes wrong, each run twice: once **without** the part that fixes it, once **with** it. Read it as the "why" behind each week: you remember a failure more easily than a feature.
 
 > **In one line:** the model makes the mistake; the harness decides whether that mistake crashes the run, wastes your money, leaks your data, or becomes a message the model can fix.
@@ -23,6 +27,45 @@ The model is a `ScriptedModel` that replays a mistake real models make, so the s
 | 6 | The history outgrows the budget | `ContextManager` | 4 |
 | 7 | The provider has a bad moment | `RetryingModel` | 7 |
 | 8 | A web page tells it to leak your data | `check_trifecta`, `ApprovalHook` | 7 |
+
+```mermaid
+flowchart LR
+  subgraph FAIL["8 Real Agent Failure Modes"]
+    F1["#1 Premature 'Done'"]
+    F2["#2 Bad Tool / Args"]
+    F3["#3 Path Traversal (../)"]
+    F4["#4 Giant Tool Output"]
+    F5["#5 Infinite Retry Loop"]
+    F6["#6 Context Overflow"]
+    F7["#7 Provider 429 / 5xx"]
+    F8["#8 Prompt Injection Exfil"]
+  end
+
+  subgraph DEF["Harness Defense Layer"]
+    D1["<b>StopCheck (Wk 6)</b><br/>on_stop verifies work & rejects"]
+    D2["<b>ToolRegistry (Wk 3)</b><br/>validate_args → error ToolResult"]
+    D3["<b>resolve_inside (Wk 3)</b><br/>Path.resolve().relative_to(root)"]
+    D4["<b>truncate (Wk 3)</b><br/>head + tail + omitted count"]
+    D5["<b>max_steps & RepeatGuard (Wk 2/6)</b><br/>before_tool blocks repeat"]
+    D6["<b>ContextManager (Wk 4)</b><br/>clear_old_results + Summarize"]
+    D7["<b>RetryingModel (Wk 7)</b><br/>Full-jitter exponential backoff"]
+    D8["<b>check_trifecta + ApprovalHook (Wk 7)</b><br/>Build check + runtime block"]
+  end
+
+  F1 --> D1
+  F2 --> D2
+  F3 --> D3
+  F4 --> D4
+  F5 --> D5
+  F6 --> D6
+  F7 --> D7
+  F8 --> D8
+
+  classDef fail fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  classDef def fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  class F1,F2,F3,F4,F5,F6,F7,F8 fail
+  class D1,D2,D3,D4,D5,D6,D7,D8 def
+```
 
 How to read the runs: `model calls` is what the model asked for, `->` is what came back (`ERROR ->` if it was an error), and `harness says` is a message the harness added to the conversation on its own.
 

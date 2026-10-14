@@ -1,6 +1,11 @@
 # Week 4: Context and memory
 
+**[← Week 3: Tools](week3-tools.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 5: Traces and Evals →](week5-traces-and-evals.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/memory.md`](../docs/memory.md) · [`docs/failures.md`](../docs/failures.md) (Failure #6)
 
 **Before you start:** weeks 2 and 3 must pass, including the week 3 wiring (`uv run pytest tests/week2 tests/week3`). The week 4 tests use `@tool` and run through your `Agent`.
 
@@ -212,3 +217,7 @@ uv run python -m scripts.week4_demo --provider openai --budget 2000
 1. Copy both "input tokens per step" lines from your demo run. Where did the budget go before and after, and did the total go up or down? Why?
 2. Describe a task where `DropOldest` loses something `Summarize` would keep, and one where the summary would be the thing that goes wrong.
 3. Some tool results should never be cleared: a plan, the test output the agent is fixing, and so on. How would you mark them? (You'll get hooks for this in week 6.)
+
+---
+
+**[← Week 3: Tools](week3-tools.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 5 — Traces and Evals →](week5-traces-and-evals.md)**

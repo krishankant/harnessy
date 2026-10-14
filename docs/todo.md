@@ -1,5 +1,9 @@
 # The todo list: how an agent plans
 
+**[← Docs Hub](README.md)** · **[Hooks](hooks.md)** · **[Subagents](subagents.md)** · **[Memory](memory.md)** · **[Week 6 Lesson](../lessons/week6-control-flow.md)**
+
+---
+
 Week 6 adds `TodoList`, a way for the model to write down a plan and keep it in view. This page covers four things:
 - how it works;
 - what Claude actually did with it in two real runs;

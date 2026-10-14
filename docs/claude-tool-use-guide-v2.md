@@ -1,5 +1,9 @@
 # Beginner's Guide to Claude Tool Use
 
+**[← Docs Hub](README.md)** · **[OpenAI Companion](openai-tool-use-guide.md)** · **[Model Interfaces](model-interfaces.md)** · **[Function Calling vs. MCP](function-calling-vs-mcp.md)** · **[Week 1 Lesson](../lessons/week1-model-interface.md)**
+
+---
+
 Tool use (also known as function calling) allows Claude to connect to external systems, databases, APIs, and web utilities. Instead of relying solely on its static training data, Claude can fetch real-time information, perform calculations, run code, and trigger actions in the real world.
 
 This guide breaks down how tool use works, how tools are structured, how Anthropic processes tool calls, and the step-by-step sequence of events, complete with visual flowcharts and sequence diagrams.
@@ -36,25 +40,18 @@ Tool use is a **formal agreement** between your application and Claude:
 
 Not all tools run in the same place. Tools fall into three distinct categories based on where the code executes:
 
-```
-                      ┌─────────────────────────────────────────┐
-                      │            TOOL CATEGORIES              │
-                      └────────────────────┬────────────────────┘
-                                           │
-         ┌─────────────────────────────────┴─────────────────────────────────┐
-         │                                                                   │
-┌────────┴────────┐                                                 ┌────────┴────────┐
-│  CLIENT TOOLS   │                                                 │  SERVER TOOLS   │
-│ (You Execute)   │                                                 │(Anthropic Runs) │
-└────────┬────────┘                                                 └────────┬────────┘
-         │                                                                   │
- ┌───────┴──────────────────────┐                                   ┌────────┴────────┐
- │                              │                                   │ - web_search    │
-┌┴───────────────┐     ┌────────┴────────┐                          │ - web_fetch     │
-│ User-Defined   │     │ Anthropic Schema│                          │ - code_execution│
-│ (Your Custom   │     │ (Pre-Trained    │                          │ - tool_search   │
-│  APIs & DBs)   │     │  Bash, Browser) │                          └─────────────────┘
-└────────────────┘     └─────────────────┘
+```mermaid
+flowchart TB
+  ROOT["<b>Claude Tool Categories</b>"] --> CLIENT["<b>Client Tools</b><br/>(Your Application Executes)"]
+  ROOT --> SERVER["<b>Server Tools</b><br/>(Anthropic Infrastructure Executes)"]
+  CLIENT --> CUSTOM["<b>User-Defined Client Tools</b><br/>Custom functions, APIs, SQL, file_tools"]
+  CLIENT --> PRE["<b>Anthropic-Schema Client Tools</b><br/>Pre-trained schemas: bash, text_editor,<br/>computer, memory"]
+  SERVER --> HOSTED["<b>Built-in Hosted Tools</b><br/>web_search · web_fetch<br/>code_execution · tool_search"]
+
+  style ROOT fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style CLIENT fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style SERVER fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
+  style CUSTOM fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
 ```
 
 | Category | Execution Environment | Examples | Who Writes Schema? | Who Executes Code? |
@@ -73,43 +70,26 @@ The interaction between the User, your Application, the Claude API, and External
 
 *The four participants and who talks to whom. The drawing takes two shortcuts for space: the external service's data really goes back to **your app**, which sends it to Claude as a `tool_result` (steps 6–7 below), and Claude's final answer also reaches the user **through your app** (steps 9–10). Claude never talks to the external service or the user directly.*
 
-### Visual Flowchart: The Tool-Use Lifecycle
+### Visual Sequence: The Tool-Use Lifecycle
 
-```
- ┌──────────┐            ┌─────────────────┐            ┌────────────┐            ┌──────────────────┐
- │   User   │            │ Your App/Agent  │            │ Claude API │            │ External Service │
- └────┬─────┘            └────────┬────────┘            └─────┬──────┘            └────────┬─────────┘
-      │                           │                           │                            │
-      │ 1. "What's the weather    │                           │                            │
-      │    in San Francisco?"     │                           │                            │
-      ├──────────────────────────►│                           │                            │
-      │                           │ 2. POST /messages         │                            │
-      │                           │    (User prompt + Tools)  │                            │
-      │                           ├──────────────────────────►│                            │
-      │                           │                           │ 3. Evaluates prompt        │
-      │                           │                           │    against tool schemas    │
-      │                           │                           │                            │
-      │                           │ 4. Response:              │                            │
-      │                           │    stop_reason: "tool_use"│                            │
-      │                           │    tool_use: get_weather  │                            │
-      │                           │◄──────────────────────────┤                            │
-      │                           │                           │                            │
-      │                           │ 5. Runs get_weather()     │                            │
-      │                           ├───────────────────────────────────────────────────────►│
-      │                           │ 6. Weather data returned  │                            │
-      │                           │◄───────────────────────────────────────────────────────┤
-      │                           │                           │                            │
-      │                           │ 7. POST /messages         │                            │
-      │                           │    (History + tool_result)│                            │
-      │                           ├──────────────────────────►│                            │
-      │                           │                           │ 8. Synthesizes final       │
-      │                           │                           │    natural language reply  │
-      │                           │ 9. Response:              │                            │
-      │                           │    stop_reason: "end_turn"│                            │
-      │                           │◄──────────────────────────┤                            │
-      │ 10. "The weather in SF is │                           │                            │
-      │     15°C and cloudy."     │                           │                            │
-      │◄──────────────────────────┤                           │                            │
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant App as Your App / Harness
+  participant API as Claude API (/v1/messages)
+  participant Ext as External Service
+
+  U->>App: "What's the weather in San Francisco?"
+  App->>API: POST /v1/messages (messages + tools schema)
+  Note over API: Evaluates prompt against tool schemas
+  API-->>App: stop_reason: "tool_use"<br/>content: [{type: "tool_use", id: "toolu_01...", name: "get_weather", input: {...}}]
+  App->>Ext: Execute get_weather(location="San Francisco, CA")
+  Ext-->>App: {"temp_c": 15, "condition": "cloudy"}
+  App->>API: POST /v1/messages (assistant turn + user turn with tool_result matching tool_use_id)
+  Note over API: Synthesizes final natural-language answer
+  API-->>App: stop_reason: "end_turn"<br/>content: [{type: "text", text: "The weather in SF is 15°C and cloudy."}]
+  App-->>U: "The weather in SF is 15°C and cloudy."
 ```
 
 ---
@@ -333,25 +313,24 @@ print(final_message.content[0].text)
 
 You can control whether Claude is allowed or forced to use tools using the `tool_choice` parameter:
 
-```
-                          ┌───────────────────────────┐
-                          │    tool_choice Options    │
-                          └─────────────┬─────────────┘
-                                        │
-      ┌──────────────────┬──────────────┴──────────────┬──────────────────┐
-      │                  │                             │                  │
-┌─────┴──────┐    ┌──────┴─────┐                ┌──────┴─────┐    ┌──────┴─────┐
-│  {"auto"}  │    │  {"any"}   │                │ {"tool"}   │    │  {"none"}  │
-└─────┬──────┘    └──────┬─────┘                └──────┬─────┘    └─────┬──────┘
-      │                  │                             │                  │
-Default: Claude   Forces Claude                 Forces a          Prevents all
-decides whether   to call AT LEAST              SPECIFIC named    tool use.
-to call a tool.   ONE tool.                     tool.             Generates prose.
+```mermaid
+flowchart TB
+  TC["<b>tool_choice Options</b>"] --> AUTO["<b>{\"type\": \"auto\"}</b><br/>Default: Claude decides whether<br/>to call a tool or reply in prose"]
+  TC --> ANY["<b>{\"type\": \"any\"}</b><br/>Forces Claude to call<br/>at least one available tool"]
+  TC --> TOOL["<b>{\"type\": \"tool\", \"name\": \"...\"}</b><br/>Forces Claude to call<br/>one specific named tool"]
+  TC --> NONE["<b>{\"type\": \"none\"}</b><br/>Disables all tool calls;<br/>plain-text reply only"]
+
+  style TC fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style AUTO fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style ANY fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style TOOL fill:#fff6e0,stroke:#d19a1c,color:#1b2230
+  style NONE fill:#fbf0e1,stroke:#a65b00,color:#1b2230
 ```
 
 - **`{"type": "auto"}`** *(Default)*: Claude dynamically decides whether to call a tool or reply directly in plain text.
-- **`{"type": "auto"}` / `{"type": "any"}` / `{"type": "tool"}`**: Control tool forcing options where supported.
-- **`{"type": "none"}`**: Disables tool calls entirely.
+- **`{"type": "any"}`**: Forces Claude to use at least one of the provided tools before answering.
+- **`{"type": "tool", "name": "get_weather"}`**: Forces Claude to call the specified tool.
+- **`{"type": "none"}`**: Disables tool calls entirely for that turn.
 
 ---
 

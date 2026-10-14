@@ -1,5 +1,9 @@
 # Hooks: changing the loop without editing it
 
+**[← Docs Hub](README.md)** · **[Claude Code Hooks](claude-code-hooks.md)** · **[OpenAI Hooks](openai-hooks.md)** · **[System Architecture](architecture.md)** · **[Week 6 Lesson](../lessons/week6-control-flow.md)**
+
+---
+
 Week 6 adds hooks. This page explains where they fire, what each one can return, how several hooks combine, and the four hooks harnessy already has. It then gives six hooks you can write yourself, each checked against `ScriptedModel`, and ends with a map from these hooks to the ones in Claude Code, Codex and the OpenAI Agents SDK.
 
 > **In one line:** a hook is code the agent loop calls at fixed points in a run, so you can **watch**, **change** or **block** what happens without touching `loop.py`.

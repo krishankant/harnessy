@@ -1,6 +1,11 @@
 # Week 5: Traces and evals
 
+**[← Week 4: Context and Memory](week4-context-and-memory.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 6: Control Flow →](week6-control-flow.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/traces.md`](../docs/traces.md) · [`docs/claude-code-traces.md`](../docs/claude-code-traces.md)
 
 **Before you start:** weeks 2–4 must pass, including their wiring (`uv run pytest tests/week2 tests/week3 tests/week4`). The eval runner drives your own `Agent`, with your tools and your context code.
 
@@ -286,3 +291,7 @@ Then make **one** change and run it again. For example, edit `write_file`'s desc
 1. Paste your first full results table. Which task failed most, and what did its trace show?
 2. Which check would you trust least, and how would you find out whether the judge agrees with you?
 3. Name one change you expected to help that didn't move the numbers, or one that moved them the wrong way.
+
+---
+
+**[← Week 4: Context and Memory](week4-context-and-memory.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 6 — Control Flow →](week6-control-flow.md)**

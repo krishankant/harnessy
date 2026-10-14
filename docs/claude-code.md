@@ -1,5 +1,9 @@
 # harnessy and Claude Code: the same harness, at two sizes
 
+**[← Docs Hub](README.md)** · **[What is a Harness?](what-is-a-harness.md)** · **[Claude Code Hooks](claude-code-hooks.md)** · **[Claude Code Traces](claude-code-traces.md)** · **[System Architecture](architecture.md)**
+
+---
+
 You use a harness every day: Claude Code. This page puts the two side by side, module by module, so that each week of the course points at something you have already seen in your terminal. It also lists what Claude Code has that harnessy does not (good stretch exercises) and the few things harnessy does that Claude Code does not.
 
 > **In one line:** Claude Code is the same loop you write in week 2, with the same organs bolted on: tools, context, memory, hooks, approvals, subagents and a todo list. Everything that makes it feel like a product lives in the harness, not in the model.

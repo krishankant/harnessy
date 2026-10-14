@@ -1,5 +1,9 @@
 # Beginner's Guide to OpenAI Tool Use
 
+**[← Docs Hub](README.md)** · **[Claude Companion](claude-tool-use-guide-v2.md)** · **[Model Interfaces](model-interfaces.md)** · **[Function Calling vs. MCP](function-calling-vs-mcp.md)** · **[Week 1 Lesson](../lessons/week1-model-interface.md)**
+
+---
+
 Tool use (OpenAI calls it **function calling**) lets an OpenAI model such as GPT-5.5 connect to external systems, databases, APIs and web utilities. Instead of relying only on its training data, the model can fetch live information, run calculations, call your code and trigger actions in the real world.
 
 This guide explains how tool use works with OpenAI: how tools are defined, where they run, the step-by-step sequence of a tool call, and the agent loop that ties it together. It is the OpenAI companion to [`claude-tool-use-guide-v2.md`](claude-tool-use-guide-v2.md), and section 9 maps one onto the other.
@@ -39,25 +43,18 @@ Tool use is a **formal agreement** between your application and the model:
 
 Tools fall into three groups, depending on where the code runs:
 
-```
-                      ┌─────────────────────────────────────────┐
-                      │            TOOL CATEGORIES              │
-                      └────────────────────┬────────────────────┘
-                                           │
-         ┌─────────────────────────────────┴─────────────────────────────────┐
-         │                                                                   │
-┌────────┴────────┐                                                 ┌────────┴────────┐
-│ FUNCTION TOOLS  │                                                 │  HOSTED TOOLS   │
-│ (You Execute)   │                                                 │ (OpenAI Runs)   │
-└────────┬────────┘                                                 └────────┬────────┘
-         │                                                                   │
- ┌───────┴──────────────────────┐                                ┌───────────┴─────────┐
- │                              │                                │ - web_search        │
-┌┴───────────────┐     ┌────────┴─────────┐                      │ - file_search       │
-│ Your custom    │     │ OpenAI-defined,  │                      │ - code_interpreter  │
-│ functions      │     │ you run them     │                      │ - image_generation  │
-│ (APIs, DBs)    │     │ (computer use)   │                      │ - remote MCP server │
-└────────────────┘     └──────────────────┘                      └─────────────────────┘
+```mermaid
+flowchart TB
+  ROOT["<b>OpenAI Tool Categories</b>"] --> FN["<b>Function Tools</b><br/>(Your Application Executes)"]
+  ROOT --> HOST["<b>Hosted Tools (Responses API)</b><br/>(OpenAI Infrastructure Executes)"]
+  FN --> CUSTOM["<b>Your Custom Functions</b><br/>APIs, SQL databases, file_tools"]
+  FN --> OAI_DEF["<b>OpenAI-Defined, Client-Executed</b><br/>computer_use (clicks/keystrokes → screenshot)"]
+  HOST --> BUILTIN["<b>Built-in Hosted Tools</b><br/>web_search · file_search · code_interpreter<br/>image_generation · remote MCP server"]
+
+  style ROOT fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style FN fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style HOST fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
+  style CUSTOM fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
 ```
 
 | Category | Where it runs | Examples | Who writes the schema? | Who executes the code? |
@@ -74,42 +71,24 @@ Hosted tools exist in the **Responses API**; Chat Completions has almost none. Y
 
 The user, your application, the OpenAI API and your external services take part in a round trip:
 
-```
- ┌──────────┐            ┌─────────────────┐            ┌────────────┐            ┌──────────────────┐
- │   User   │            │ Your App/Agent  │            │ OpenAI API │            │ External Service │
- └────┬─────┘            └────────┬────────┘            └─────┬──────┘            └────────┬─────────┘
-      │                           │                           │                            │
-      │ 1. "What's the weather    │                           │                            │
-      │    in San Francisco?"     │                           │                            │
-      ├──────────────────────────►│                           │                            │
-      │                           │ 2. POST /v1/responses     │                            │
-      │                           │    (input + tools)        │                            │
-      │                           ├──────────────────────────►│                            │
-      │                           │                           │ 3. Model weighs the prompt │
-      │                           │                           │    against tool schemas    │
-      │                           │                           │                            │
-      │                           │ 4. Response: output has a │                            │
-      │                           │    function_call item     │                            │
-      │                           │    (name, call_id, args)  │                            │
-      │                           │◄──────────────────────────┤                            │
-      │                           │                           │                            │
-      │                           │ 5. Runs get_weather()     │                            │
-      │                           ├───────────────────────────────────────────────────────►│
-      │                           │ 6. Weather data returned  │                            │
-      │                           │◄───────────────────────────────────────────────────────┤
-      │                           │                           │                            │
-      │                           │ 7. POST /v1/responses     │                            │
-      │                           │    (function_call_output  │                            │
-      │                           │     with the same call_id)│                            │
-      │                           ├──────────────────────────►│                            │
-      │                           │                           │ 8. Writes the final        │
-      │                           │                           │    natural-language reply  │
-      │                           │ 9. Response: output has a │                            │
-      │                           │    message, no calls      │                            │
-      │                           │◄──────────────────────────┤                            │
-      │ 10. "It's 15°C and cloudy │                           │                            │
-      │     in San Francisco."    │                           │                            │
-      │◄──────────────────────────┤                           │                            │
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant App as Your App / Harness
+  participant API as OpenAI API (/v1/responses)
+  participant Ext as External Service
+
+  U->>App: "What's the weather in San Francisco?"
+  App->>API: POST /v1/responses (input + tools schema)
+  Note over API: Weighs prompt against tool schemas
+  API-->>App: output contains function_call item<br/>(name: "get_weather", call_id: "call_9X...", arguments: "{...}")
+  App->>Ext: Execute get_weather(location="San Francisco, CA")
+  Ext-->>App: {"temp_c": 15, "condition": "cloudy"}
+  App->>API: POST /v1/responses (function_call_output with matching call_id)
+  Note over API: Synthesizes final natural-language reply
+  API-->>App: output has message item (no function_call)
+  App-->>U: "It's 15°C and cloudy in San Francisco."
 ```
 
 The same round trip in Chat Completions: step 4 is `finish_reason: "tool_calls"` with entries in `message.tool_calls`; step 7 sends one `{"role": "tool"}` message per call; step 9 is `finish_reason: "stop"`.
@@ -344,6 +323,26 @@ Claude's `tool_result` has `is_error: true`. **OpenAI has no error flag.** Put t
 
 The model reads it and retries with different arguments, asks the user, or offers another way. (harnessy's adapter prefixes failed results with `ERROR:` for the same reason.)
 
+### The Whole Loop as a Decision Tree
+
+```mermaid
+flowchart TB
+  START(["User Prompt + Tools Schema"]) --> CALL["Call OpenAI API<br/>(/v1/responses or /v1/chat/completions)"]
+  CALL --> HAS{"Did response request<br/>tool calls?"}
+  HAS -- "No (stop / message only)" --> DONE(["Return final text to User"])
+  HAS -- "Yes (function_call / tool_calls)" --> LOOP["For each call:<br/>parse JSON arguments & execute function"]
+  LOOP --> OK{"Succeeded?"}
+  OK -- "Yes" --> OUT_OK["Build output with matching call_id"]
+  OK -- "No (Exception)" --> OUT_ERR["Build output with 'ERROR: ...'<br/>(no is_error flag in OpenAI)"]
+  OUT_OK --> APPEND["Append assistant turn + all tool outputs to history"]
+  OUT_ERR --> APPEND
+  APPEND --> CALL
+
+  style START fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style DONE fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style OUT_ERR fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+```
+
 ### Simplifying with the Agents SDK
 
 Writing the loop by hand is good for learning. For production, OpenAI's **Agents SDK** (`pip install openai-agents`) runs it for you: it builds schemas from Python functions, executes calls and loops until the agent finishes:
@@ -365,19 +364,20 @@ print(result.final_output)
 
 ## 7. Controlling Tool Usage (`tool_choice`)
 
-```
-                          ┌───────────────────────────┐
-                          │    tool_choice options    │
-                          └─────────────┬─────────────┘
-                                        │
-      ┌──────────────────┬──────────────┴──────────────┬──────────────────┐
-      │                  │                             │                  │
-┌─────┴──────┐    ┌──────┴──────┐              ┌───────┴──────┐    ┌──────┴─────┐
-│  "auto"    │    │ "required"  │              │ a function   │    │   "none"   │
-└─────┬──────┘    └──────┬──────┘              └───────┬──────┘    └──────┬─────┘
-      │                  │                             │                  │
-Default: the       Must call AT              Must call THIS          No tool calls;
-model decides.     LEAST ONE tool.           named function.         plain text only.
+```mermaid
+flowchart TB
+  TC["<b>tool_choice Options</b>"] --> AUTO["<b>\"auto\"</b><br/>Default: the model decides<br/>whether to call a tool"]
+  TC --> REQ["<b>\"required\"</b><br/>Forces the model to call<br/>at least one tool"]
+  TC --> FN["<b>Named Function</b><br/>Forces a specific function<br/>(e.g. get_weather)"]
+  TC --> ALLOW["<b>allowed_tools</b><br/>Restricts to a subset of tools<br/>without altering the prompt cache"]
+  TC --> NONE["<b>\"none\"</b><br/>Disables all tool calls;<br/>plain text only"]
+
+  style TC fill:#f6f7fb,stroke:#9aa3c0,color:#1b2230
+  style AUTO fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style REQ fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style FN fill:#fff6e0,stroke:#d19a1c,color:#1b2230
+  style ALLOW fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
+  style NONE fill:#fbf0e1,stroke:#a65b00,color:#1b2230
 ```
 
 | You want | Responses API | Chat Completions |

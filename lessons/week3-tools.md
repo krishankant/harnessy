@@ -1,6 +1,11 @@
 # Week 3: Tools
 
+**[← Week 2: The Agent Loop](week2-agent-loop.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 4: Context and Memory →](week4-context-and-memory.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/failures.md`](../docs/failures.md) (Failures #2, #3, #4) · [`docs/claude-tool-use-guide-v2.md`](../docs/claude-tool-use-guide-v2.md) · [`docs/openai-tool-use-guide.md`](../docs/openai-tool-use-guide.md)
 
 **Before you start:** the week 3 tests run through your `Agent`, so your week 2 loop must pass `uv run pytest tests/week2`.
 
@@ -221,3 +226,7 @@ Each run gets a fresh temporary folder. You should see `write_file`, then `read_
 1. In the demo, did either model ever get a validation error? If you force one (rename a parameter in the prompt), what does the model do with the message on the next step?
 2. Name one tool you'd want in a real agent that should be confined the way `file_tools` is. What is its "root"?
 3. Longer descriptions cost tokens on every single call. When is that worth it?
+
+---
+
+**[← Week 2: The Agent Loop](week2-agent-loop.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 4 — Context and Memory →](week4-context-and-memory.md)**

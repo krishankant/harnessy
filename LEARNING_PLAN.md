@@ -1,5 +1,9 @@
 # Harness Engineering: 8-Week Learning Plan
 
+**[← Repository Home](README.md)** · **[What is a Harness?](docs/what-is-a-harness.md)** · **[System Architecture](docs/architecture.md)** · **[Failure Gallery](docs/failures.md)** · **[Documentation Hub](docs/README.md)**
+
+---
+
 In 8 weeks at about 5 hours a week, you will write **harnessy**, a small Python agent harness that works with any model provider. Then you will prove it is general by running three different agents on it.
 
 **What a harness is.** The model only turns text into text. The harness is everything around it:
@@ -25,17 +29,17 @@ This repo is the course. For each week:
 
 `solutions/harnessy/` has the reference answers: `HARNESSY_IMPL=solutions uv run pytest` runs the same tests against them. [`docs/architecture.md`](docs/architecture.md) has diagrams of how every part fits together. Start with the [README](README.md) for setup.
 
-| Week | Lesson | Tests | Try it live |
-| --- | --- | --- | --- |
-| 1 | [One interface for every model](lessons/week1-model-interface.md) | `tests/week1` | `uv run python -m scripts.week1_compare` |
-| 2 | [The agent loop](lessons/week2-agent-loop.md) | `tests/week2` | `uv run python -m scripts.week2_demo` |
-| 3 | [Tools](lessons/week3-tools.md) | `tests/week3` | `uv run python -m scripts.week3_demo` |
-| 4 | [Context and memory](lessons/week4-context-and-memory.md) | `tests/week4` | `uv run python -m scripts.week4_demo` |
-| 5 | [Traces and evals](lessons/week5-traces-and-evals.md) | `tests/week5` | `uv run python -m scripts.evals --tasks easy --trials 1` |
-| 6 | [Control flow](lessons/week6-control-flow.md) | `tests/week6` | `uv run python -m scripts.week6_demo` |
-| 7 | [Production concerns](lessons/week7-production.md) | `tests/week7` | `uv run python -m scripts.week7_demo` |
-| 8 | [Capstone](lessons/week8-capstone.md) | `tests/week8` | `uv run python -m scripts.evals --suite capstone --trials 1` |
-| 9 (bonus) | [Tools from anywhere with MCP](lessons/week9-mcp.md) | `tests/week9` | `uv run python -m scripts.week9_demo` |
+| Week | Lesson | Companion Guides (`docs/`) | Tests | Try it live |
+| :---: | --- | --- | --- | --- |
+| **1** | [One interface for every model](lessons/week1-model-interface.md) | [`model-interfaces.md`](docs/model-interfaces.md), [`claude-tool-use-guide-v2.md`](docs/claude-tool-use-guide-v2.md), [`openai-tool-use-guide.md`](docs/openai-tool-use-guide.md) | `tests/week1` | `uv run python -m scripts.week1_compare` |
+| **2** | [The agent loop](lessons/week2-agent-loop.md) | [`what-is-a-harness.md`](docs/what-is-a-harness.md), [`failures.md`](docs/failures.md) | `tests/week2` | `uv run python -m scripts.week2_demo` |
+| **3** | [Tools](lessons/week3-tools.md) | [`failures.md`](docs/failures.md) (#2, #3, #4) | `tests/week3` | `uv run python -m scripts.week3_demo` |
+| **4** | [Context and memory](lessons/week4-context-and-memory.md) | [`memory.md`](docs/memory.md) | `tests/week4` | `uv run python -m scripts.week4_demo` |
+| **5** | [Traces and evals](lessons/week5-traces-and-evals.md) | [`traces.md`](docs/traces.md), [`claude-code-traces.md`](docs/claude-code-traces.md) | `tests/week5` | `uv run python -m scripts.evals --tasks easy --trials 1` |
+| **6** | [Control flow](lessons/week6-control-flow.md) | [`hooks.md`](docs/hooks.md), [`subagents.md`](docs/subagents.md), [`todo.md`](docs/todo.md), [`skills.md`](docs/skills.md), [`claude-code-hooks.md`](docs/claude-code-hooks.md), [`openai-hooks.md`](docs/openai-hooks.md) | `tests/week6` | `uv run python -m scripts.week6_demo` |
+| **7** | [Production concerns](lessons/week7-production.md) | [`trifecta.md`](docs/trifecta.md), [`sandbox.md`](docs/sandbox.md) | `tests/week7` | `uv run python -m scripts.week7_demo` |
+| **8** | [Capstone](lessons/week8-capstone.md) | [`architecture.md`](docs/architecture.md), [`claude-code.md`](docs/claude-code.md) | `tests/week8` | `uv run python -m scripts.evals --suite capstone --trials 1` |
+| **9** *(bonus)* | [Tools from anywhere with MCP](lessons/week9-mcp.md) | [`function-calling-vs-mcp.md`](docs/function-calling-vs-mcp.md), [`mcp-under-the-hood.md`](docs/mcp-under-the-hood.md) | `tests/week9` | `uv run python -m scripts.week9_demo` |
 
 **How to use this plan.** Work through one week at a time, in order: each week adds a layer the next one depends on. Every week has the same parts:
 
@@ -64,6 +68,23 @@ You need Python 3.11+ and keys for two model providers. A local model is optiona
 ## What you're building
 
 By week 8, harnessy has seven parts. The loop is the only one that knows about all the others, and each of the rest can be swapped out without touching the loop. See [`docs/architecture.md`](docs/architecture.md) (Fig 1) for the picture.
+
+```mermaid
+flowchart LR
+  W1["<b>Week 1</b><br/>Model Interface<br/>Anthropic · OpenAI · Ollama"] --> W2["<b>Week 2</b><br/>Agent Loop<br/>Run · Limits · ScriptedModel"]
+  W2 --> W3["<b>Week 3</b><br/>Tool System<br/>@tool · Registry · Confined I/O"]
+  W3 --> W4["<b>Week 4</b><br/>Context & Memory<br/>DropOldest · Summarize · MemoryStore"]
+  W4 --> W5["<b>Week 5</b><br/>Traces & Evals<br/>JSONL Tracer · 15 YAML Tasks · Graders"]
+  W5 --> W6["<b>Week 6</b><br/>Control Flow<br/>Hooks · Approvals · Subagents · Todo"]
+  W6 --> W7["<b>Week 7</b><br/>Production Hardening<br/>Retries · Stream · Cost · Sandbox · Trifecta"]
+  W7 --> W8["<b>Week 8 Capstone</b><br/>3 Config-Only Agents<br/>Research · Code · Data"]
+  W3 & W6 & W7 -.-> W9["<b>Week 9 (Bonus)</b><br/>MCP Client<br/>stdio · Modern & Legacy"]
+
+  style W2 fill:#e8f0fe,stroke:#4a6fd8,color:#1b2230
+  style W7 fill:#fbf0e1,stroke:#a65b00,color:#1b2230
+  style W8 fill:#eef8ee,stroke:#3a9a4a,color:#1b2230
+  style W9 fill:#f3eafd,stroke:#8a5cc7,color:#1b2230
+```
 
 The agent you write in week 8 is just configuration: a prompt, a list of tools and some limits. Everything else is the harness. Keep that boundary sharp. If agent-specific logic creeps into the loop, the "generic" test in week 8 will expose it.
 

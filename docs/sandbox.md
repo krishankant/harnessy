@@ -1,5 +1,9 @@
 # The sandbox: letting an agent run commands without trusting it
 
+**[← Docs Hub](README.md)** · **[The Lethal Trifecta](trifecta.md)** · **[Failure Gallery](failures.md)** · **[Claude Code Overview](claude-code.md)** · **[Week 7 Lesson](../lessons/week7-production.md)**
+
+---
+
 Week 7 gives the agent a shell. This page explains what a sandbox is, what harnessy's `run_command` protects you from, what it does **not**, and how to add real isolation when you need it. Every result below comes from one script you can run:
 
 ```bash

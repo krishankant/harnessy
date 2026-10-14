@@ -1,6 +1,11 @@
 # Week 2: The agent loop
 
+**[← Week 1: Model Interface](week1-model-interface.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[System Architecture](../docs/architecture.md)** · **[Week 3: Tools →](week3-tools.md)**
+
+---
+
 **Time:** about 5 hours (1.5 reading, 3 building, 30 minutes on notes).
+**Companion guides:** [`docs/what-is-a-harness.md`](../docs/what-is-a-harness.md) · [`docs/failures.md`](../docs/failures.md)
 
 **You're done when:**
 
@@ -199,3 +204,7 @@ Then try `--max-steps 1`. The run stops with `max_steps` after the first tool ca
 1. Your loop checks limits before each model call. What would go wrong if it checked only after?
 2. Look at the token counts per step in the live trace. Why does the input count grow every step even though you only asked one question? (Hold on to this for week 4.)
 3. The loop treats "unknown tool" as a result the model can fix. Name a failure where stopping the run would be better than letting the model retry.
+
+---
+
+**[← Week 1: Model Interface](week1-model-interface.md)** · **[Learning Plan](../LEARNING_PLAN.md)** · **[Next: Week 3 — Tools →](week3-tools.md)**

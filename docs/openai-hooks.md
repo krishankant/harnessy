@@ -1,5 +1,9 @@
 # OpenAI hooks: Codex and the Agents SDK
 
+**[← Docs Hub](README.md)** · **[harnessy Hooks](hooks.md)** · **[Claude Code Hooks](claude-code-hooks.md)** · **[OpenAI Tool Use Guide](openai-tool-use-guide.md)** · **[Week 6 Lesson](../lessons/week6-control-flow.md)**
+
+---
+
 This is the OpenAI companion to [`claude-code-hooks.md`](claude-code-hooks.md). OpenAI has hooks in two places, and they look nothing alike: **Codex** (a coding agent you run in a terminal) uses programs set in a config file, and the **Agents SDK** (a Python library) uses classes. This page covers both, maps each onto harnessy's week 6 hooks, and ends with a three-way comparison.
 
 > **In one line:** hooks belong to the harness, not to the model API. Codex's hooks are Claude Code's hooks with small differences; the Agents SDK splits harnessy's `Hook` in two, **lifecycle hooks that only watch** and **guardrails that can block**.

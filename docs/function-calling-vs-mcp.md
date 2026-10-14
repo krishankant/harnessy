@@ -1,5 +1,9 @@
 # Function Calling vs. MCP: One Tool, Built Both Ways
 
+**[← Docs Hub](README.md)** · **[MCP Under the Hood](mcp-under-the-hood.md)** · **[Claude Tool Use](claude-tool-use-guide-v2.md)** · **[OpenAI Tool Use](openai-tool-use-guide.md)** · **[Week 9 Lesson](../lessons/week9-mcp.md)**
+
+---
+
 People often ask whether MCP replaces function calling. It doesn't. The two work at different layers and are used together:
 
 - **Function calling** (Anthropic calls it *tool use*) is how a **model** asks for a tool. The model reads tool definitions, and instead of answering it replies with a structured request like "call `get_weather` with `{"city": "Paris"}`". Your app runs the function and sends the result back.
